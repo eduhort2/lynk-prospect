@@ -19,14 +19,17 @@ export function BrandLoader() {
       role="status"
       aria-label="Carregando LYNK Prospect"
     >
-      <Image
-        src="/brand/lynk-logo.png"
-        alt="LYNK"
-        width={210}
-        height={76}
-        priority
-        className="brand-loader__logo h-auto w-[170px] sm:w-[210px]"
-      />
+      <div className="brand-loader__content flex flex-col items-center">
+        <Image
+          src="/brand/lynk-logo.png"
+          alt="LYNK"
+          width={210}
+          height={76}
+          priority
+          className="brand-loader__logo h-auto w-[170px] sm:w-[210px]"
+        />
+        <div className="brand-loader__track mt-7 h-px w-36 overflow-hidden bg-white/10 sm:w-44"><span className="brand-loader__progress block h-full bg-primary-light" /></div>
+      </div>
       <span className="sr-only">Carregando</span>
     </div>
   );

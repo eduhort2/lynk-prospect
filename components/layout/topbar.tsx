@@ -104,7 +104,7 @@ export function Topbar() {
                 <span>Mais</span><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", moreOpen && "rotate-180")} />
               </button>
               {moreOpen ? (
-                <div className="absolute left-0 top-12 grid w-[430px] grid-cols-2 gap-1 rounded-xl border border-line bg-[#0B101A] p-2 shadow-2xl">
+                <div className="animate-menu-in absolute left-0 top-12 grid w-[430px] grid-cols-2 gap-1 rounded-xl border border-line bg-[#0B101A] p-2 shadow-2xl">
                   {moreLinks.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(pathname, item.href);
