@@ -5,7 +5,7 @@ import { Topbar } from "./topbar";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background bg-grid bg-[size:48px_48px]">
       <Sidebar />
       <div className="min-h-screen lg:pl-64">
         <Topbar />

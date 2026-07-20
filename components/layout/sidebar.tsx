@@ -46,7 +46,7 @@ function NavLink({ item }: { item: (typeof primary)[number] }) {
       href={item.href}
       className={cn(
         "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-        active ? "bg-white/[.07] text-white" : "text-zinc-500 hover:bg-white/[.04] hover:text-zinc-200",
+        active ? "border border-primary/15 bg-primary/[.08] text-white shadow-[inset_3px_0_0_#00b8f5]" : "border border-transparent text-zinc-500 hover:bg-white/[.035] hover:text-zinc-200",
       )}
     >
       <Icon className={cn("h-4 w-4", active && "text-primary-light")} />
@@ -60,9 +60,9 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const subscription = useSubscription();
   const planName = subscription.data?.plan?.name || "Gratuito";
   return (
-    <aside className={cn("w-64 border-r border-line bg-[#0C0D0B] flex-col", mobile ? "flex h-full" : "fixed inset-y-0 left-0 z-30 hidden lg:flex")}>
+    <aside className={cn("w-64 border-r border-line bg-[#070A0F] flex-col", mobile ? "flex h-full" : "fixed inset-y-0 left-0 z-30 hidden lg:flex")}>
       <div className="flex h-20 items-center border-b border-line px-6"><Logo /></div>
-      <div className="mx-4 my-4 rounded-lg border border-line bg-[#121310] p-3">
+      <div className="mx-4 my-4 rounded-lg border border-line bg-[#0B1017] p-3">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-[.16em] text-zinc-500">Workspace</span>
           <span className="rounded-md bg-primary/10 px-2 py-1 text-[9px] font-semibold uppercase text-primary-light">{planName}</span>

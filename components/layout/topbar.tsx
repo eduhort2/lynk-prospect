@@ -41,7 +41,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-[#090A09]/94 px-4 backdrop-blur-xl sm:px-6 lg:px-7">
+      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-[#05070A]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-7">
         <div className="flex items-center gap-3">
           <Button className="lg:hidden" variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label="Abrir menu">
             <Menu className="h-5 w-5" />
@@ -56,7 +56,7 @@ export function Topbar() {
             <p className="text-xs font-medium text-zinc-200">{profile?.name || "Usuário"}</p>
             <p className="text-[11px] text-zinc-600">{profile?.email}</p>
           </div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-[#151613] text-xs font-semibold text-zinc-200">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/15 bg-[#0B1219] text-xs font-semibold text-primary-light">
             {initials(profile?.name)}
           </div>
           <Button variant="ghost" size="icon" onClick={logout} aria-label="Sair">
@@ -67,7 +67,7 @@ export function Topbar() {
 
       {open ? (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm lg:hidden" onMouseDown={() => setOpen(false)}>
-          <div className="relative h-full w-64 bg-[#0C0D0B]" onMouseDown={(event) => event.stopPropagation()} onClick={() => setOpen(false)}>
+          <div className="relative h-full w-64 bg-[#070A0F]" onMouseDown={(event) => event.stopPropagation()} onClick={() => setOpen(false)}>
             <Sidebar mobile />
           </div>
         </div>

@@ -84,13 +84,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-[#090A09] lg:grid-cols-[minmax(480px,1fr)_minmax(520px,.85fr)]">
-      <section className="hidden border-r border-line bg-[#0C0D0B] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+    <main className="relative grid min-h-screen overflow-hidden bg-[#05070A] lg:grid-cols-[minmax(480px,1fr)_minmax(520px,.85fr)]">
+      <div className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[130px]" />
+      <section className="relative hidden border-r border-line bg-grid bg-[size:52px_52px] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         <Logo />
 
         <div className="max-w-xl">
           <p className="mb-5 text-xs font-semibold uppercase tracking-[.16em] text-primary">Operação comercial</p>
-          <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-[-.035em]">Prospecção organizada, do primeiro contato ao fechamento.</h1>
+          <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-[-.035em]">Transforme prospecção em um processo previsível.</h1>
           <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">Encontre oportunidades, organize sua equipe e acompanhe cada negociação em uma única plataforma.</p>
         </div>
 
@@ -101,7 +102,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <section className="flex items-center justify-center p-5 sm:p-10 xl:p-16">
+      <section className="relative flex items-center justify-center p-5 sm:p-10 xl:p-16">
         <div className="w-full max-w-md animate-float-in">
           <Logo className="mb-12 lg:hidden" />
           <div className="mb-8">
