@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ContactRound, LayoutDashboard, ListFilter, MoreHorizontal } from "lucide-react";
+import { ContactRound, LayoutDashboard, ListFilter, MoreHorizontal, SearchCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: ContactRound },
+  { href: "/prospeccao", label: "Prospectar", icon: SearchCheck },
   { href: "/pipeline", label: "Pipeline", icon: ListFilter },
-  { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/configuracoes", label: "Mais", icon: MoreHorizontal },
 ];
 

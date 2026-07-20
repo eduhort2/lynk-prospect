@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, Eye, EyeOff, LockKeyhole, Mail, SearchCheck, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -50,12 +51,13 @@ export default function LoginPage() {
 
       if (mode === "signup") {
         if (name.trim().length < 2) throw new Error("Informe seu nome completo");
-        if (password.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres");
+        if (organizationName.trim().length < 2) throw new Error("Informe o nome da empresa");
+        if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { name: name.trim() },
+            data: { name: name.trim(), organization_name: organizationName.trim() },
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
@@ -82,53 +84,39 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-[1.05fr_.95fr]">
-      <section className="relative hidden overflow-hidden border-r border-line lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div className="absolute inset-0 bg-grid bg-[size:36px_36px] opacity-70" />
-        <div className="absolute left-1/2 top-1/3 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />
-        <Logo className="relative z-10" />
+    <main className="grid min-h-screen bg-[#090A09] lg:grid-cols-[minmax(480px,1fr)_minmax(520px,.85fr)]">
+      <section className="hidden border-r border-line bg-[#0C0D0B] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+        <Logo />
 
-        <div className="relative z-10 max-w-xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs text-primary-light">
-            <Sparkles className="h-3.5 w-3.5" /> Operação comercial inteligente
-          </div>
-          <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-tight">
-            Transforme prospecção em um processo previsível.
-          </h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">
-            Leads, agenda, pipeline e produção de landing pages conectados no mesmo produto da LYNK.
-          </p>
+        <div className="max-w-xl">
+          <p className="mb-5 text-xs font-semibold uppercase tracking-[.16em] text-primary">Operação comercial</p>
+          <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-[-.035em]">Prospecção organizada, do primeiro contato ao fechamento.</h1>
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">Encontre oportunidades, organize sua equipe e acompanhe cada negociação em uma única plataforma.</p>
         </div>
 
-        <div className="relative z-10 grid grid-cols-3 gap-3">
-          {["CRM centralizado", "Pipeline visual", "Arquitetura escalável"].map((item, index) => (
-            <div key={item} className="rounded-2xl border border-white/[.06] bg-white/[.025] p-4">
-              <span className="mb-5 block text-xs text-primary-light">0{index + 1}</span>
-              <p className="text-xs text-zinc-400">{item}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-3 border-t border-line pt-8">
+          <div><SearchCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Pesquisa de leads</p></div>
+          <div><BarChart3 className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Gestão do pipeline</p></div>
+          <div><ShieldCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Dados por empresa</p></div>
         </div>
       </section>
 
-      <section className="flex items-center justify-center p-5 sm:p-10">
+      <section className="flex items-center justify-center p-5 sm:p-10 xl:p-16">
         <div className="w-full max-w-md animate-float-in">
           <Logo className="mb-12 lg:hidden" />
           <div className="mb-8">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[.18em] text-primary-light">Acesso seguro</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[.16em] text-primary">LYNK Prospect</p>
             <h2 className="text-3xl font-semibold tracking-tight">
               {mode === "login" ? "Bem-vindo de volta" : mode === "signup" ? "Criar primeiro acesso" : "Recuperar senha"}
             </h2>
             <p className="mt-2 text-sm text-zinc-500">
-              {mode === "recover" ? "Enviaremos um link seguro para o seu e-mail." : "Use os dados cadastrados no Supabase Auth."}
+              {mode === "recover" ? "Enviaremos um link seguro para o seu e-mail." : mode === "signup" ? "Crie o ambiente da sua empresa para começar." : "Acesse o ambiente da sua empresa."}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === "signup" ? (
-              <div>
-                <Label htmlFor="name">Nome completo</Label>
-                <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome" autoComplete="name" required />
-              </div>
+              <div className="grid gap-4 sm:grid-cols-2"><div><Label htmlFor="name">Nome completo</Label><Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome" autoComplete="name" required /></div><div><Label htmlFor="organization">Empresa</Label><Input id="organization" value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} placeholder="Nome da empresa" autoComplete="organization" required /></div></div>
             ) : null}
 
             <div>
@@ -149,7 +137,7 @@ export default function LoginPage() {
                 </div>
                 <div className="relative">
                   <LockKeyhole className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
-                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" className="pl-10 pr-10" minLength={6} autoComplete={mode === "signup" ? "new-password" : "current-password"} required />
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" className="pl-10 pr-10" minLength={8} autoComplete={mode === "signup" ? "new-password" : "current-password"} required />
                   <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

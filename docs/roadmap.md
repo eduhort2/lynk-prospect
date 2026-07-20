@@ -25,7 +25,14 @@ Status: implementada na v1.0 sem dependências pagas.
 
 ## Fase 3 — Automação e SaaS
 
-Status: arquitetura preparada; não implementar até haver orçamento e validação operacional.
+Status: fundação comercial implementada na v2.0.
+
+- Planos, limites, créditos e proteção de recursos.
+- Stripe Checkout, Customer Portal e webhook assinado.
+- Gerador de prospecção com Google Places.
+- Exportação XLSX no padrão operacional da LYNK.
+- Rate limiting, auditoria e isolamento por organização.
+- Novo visual com a identidade oficial da LYNK.
 
 ### IA de landing pages
 
@@ -52,21 +59,20 @@ Status: arquitetura preparada; não implementar até haver orçamento e validaç
 - Histórico em `whatsapp_messages`.
 - Não usar automação por navegador.
 
-### Produto SaaS
+### Próximos incrementos do produto SaaS
 
 - Convites de equipe e troca de organização.
 - Onboarding guiado.
-- Stripe ou Mercado Pago para cobrança.
-- Planos, limites, uso e auditoria.
+- Painel administrativo da LYNK para suporte e gestão de clientes.
 - Painel administrativo interno.
 - LGPD: consentimento, retenção, exportação e exclusão de dados.
 
 ## Ordem recomendada de investimento
 
-1. Convites de equipe e auditoria.
-2. WhatsApp Cloud API com templates e opt-in.
-3. Fila de geração de landing pages com revisão humana.
-4. GitHub App e deploy automático.
-5. Cobrança, planos e painel SaaS.
+1. Validar custo por lead e ajustar preços/limites.
+2. Convites de equipe e painel administrativo da LYNK.
+3. WhatsApp Cloud API com templates e opt-in.
+4. Fila de geração de landing pages com revisão humana.
+5. GitHub App e deploy automático.
 
 Essa ordem reduz risco operacional e mantém uma pessoa responsável pela aprovação antes de qualquer mensagem ou publicação externa.

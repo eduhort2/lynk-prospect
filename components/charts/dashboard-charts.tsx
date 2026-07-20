@@ -8,12 +8,12 @@ export function WeeklyEvolutionChart({ data }: { data: Array<{ week: string; lea
   return (
     <ResponsiveContainer width="100%" height={250}>
       <AreaChart data={data} margin={{ top: 12, right: 4, left: -24, bottom: 0 }}>
-        <defs><linearGradient id="leadsGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2F7DFF" stopOpacity={0.35} /><stop offset="100%" stopColor="#2F7DFF" stopOpacity={0} /></linearGradient></defs>
+        <defs><linearGradient id="leadsGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8CE739" stopOpacity={0.28} /><stop offset="100%" stopColor="#8CE739" stopOpacity={0} /></linearGradient></defs>
         <CartesianGrid stroke="#1b1b1b" vertical={false} />
         <XAxis dataKey="week" stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
         <YAxis stroke="#555" fontSize={10} tickLine={false} axisLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "#aaa" }} itemStyle={{ color: "#73A7FF" }} />
-        <Area type="monotone" dataKey="leads" name="Leads" stroke="#2F7DFF" strokeWidth={2} fill="url(#leadsGradient)" />
+        <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "#aaa" }} itemStyle={{ color: "#B2F476" }} />
+        <Area type="monotone" dataKey="leads" name="Leads" stroke="#8CE739" strokeWidth={2} fill="url(#leadsGradient)" />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -41,8 +41,8 @@ export function UserPerformanceChart({ data }: { data: Array<{ name: string; lea
         <XAxis type="number" stroke="#555" fontSize={10} tickLine={false} axisLine={false} allowDecimals={false} />
         <YAxis type="category" dataKey="name" width={74} stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
         <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="leads" name="Leads" fill="#2F7DFF" radius={[0, 5, 5, 0]} />
-        <Bar dataKey="fechados" name="Fechados" fill="#73A7FF" radius={[0, 5, 5, 0]} />
+        <Bar dataKey="leads" name="Leads" fill="#8CE739" radius={[0, 5, 5, 0]} />
+        <Bar dataKey="fechados" name="Fechados" fill="#6F756A" radius={[0, 5, 5, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

@@ -12,6 +12,8 @@ export const LEAD_STATUSES = [
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 export type Priority = "Baixa" | "Média" | "Alta";
 export type UserRole = "admin" | "manager" | "seller" | "developer";
+export type PlanCode = "free" | "starter" | "pro" | "business";
+export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled" | "incomplete";
 
 export interface Profile {
   id: string;
@@ -142,4 +144,47 @@ export interface OrganizationMember {
   user_id: string;
   role: UserRole;
   profile?: Profile;
+}
+
+export interface Plan {
+  id: string;
+  code: PlanCode;
+  name: string;
+  description: string;
+  price_monthly: number;
+  max_members: number;
+  max_stored_leads: number;
+  monthly_prospecting_credits: number;
+  features: Record<string, boolean>;
+  active: boolean;
+}
+
+export interface Subscription {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  plan?: Plan | null;
+}
+
+export type ProspectingJobStatus = "queued" | "running" | "completed" | "failed";
+
+export interface ProspectingJob {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  region: string;
+  niche: string;
+  requested_quantity: number;
+  generated_quantity: number;
+  status: ProspectingJobStatus;
+  filters: Record<string, unknown>;
+  error_message: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
