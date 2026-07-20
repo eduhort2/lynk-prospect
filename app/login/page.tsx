@@ -84,8 +84,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative grid min-h-screen overflow-hidden bg-[#05070A] lg:grid-cols-[minmax(480px,1fr)_minmax(520px,.85fr)]">
-      <div className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[130px]" />
+    <main className="relative grid min-h-screen overflow-hidden bg-black lg:grid-cols-[minmax(480px,1fr)_minmax(520px,.85fr)]">
+      <div className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-[#384A72]/20 blur-[130px]" />
       <section className="relative hidden border-r border-line bg-grid bg-[size:52px_52px] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         <Logo />
 

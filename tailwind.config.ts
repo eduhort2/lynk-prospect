@@ -10,19 +10,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#05070A",
-        card: "#0B0E13",
-        surface: "#11161D",
-        line: "#202833",
-        muted: "#999D94",
+        background: "#000000",
+        card: "#111827",
+        surface: "#182033",
+        line: "#28344D",
+        muted: "#A8AEBB",
         primary: {
-          DEFAULT: "#00B8F5",
-          light: "#54D4FF",
-          dark: "#007EB8",
+          DEFAULT: "#384A72",
+          light: "#AABCE1",
+          dark: "#111827",
         },
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(0, 184, 245, 0.12), 0 12px 38px rgba(0, 104, 160, 0.12)",
+        glow: "0 0 0 1px rgba(170, 188, 225, 0.14), 0 12px 38px rgba(17, 24, 39, 0.28)",
         panel: "0 22px 70px rgba(0, 0, 0, 0.32)",
       },
       backgroundImage: {
