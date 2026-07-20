@@ -5,11 +5,11 @@ import { Topbar } from "./topbar";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-grid bg-[size:32px_32px]">
+    <div className="min-h-screen bg-background">
       <Sidebar />
       <div className="min-h-screen lg:pl-64">
         <Topbar />
-        <main className="mx-auto w-full max-w-[1600px] p-4 pb-24 sm:p-6 lg:p-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1560px] p-4 pb-24 sm:p-6 lg:p-7">{children}</main>
       </div>
       <MobileNavigation />
     </div>

@@ -47,7 +47,7 @@ export function DashboardPage() {
       <PageHeader eyebrow="Visão geral" title={`Bom trabalho, ${profile?.name?.split(" ")[0] || "equipe"}.`} description="Aqui está o resumo atualizado da operação comercial da LYNK." />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {loading ? Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-32" />) : cards.map(({ label, value, icon: Icon, note }) => (
-          <Card key={label} className="group overflow-hidden"><CardContent className="relative p-5"><div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/5 blur-2xl transition group-hover:bg-primary/15" /><div className="flex items-center justify-between"><p className="text-xs text-muted">{label}</p><Icon className="h-4 w-4 text-primary-light" /></div><p className="mt-4 text-2xl font-semibold tracking-tight">{value}</p><p className="mt-1 truncate text-[10px] text-zinc-600">{note}</p></CardContent></Card>
+          <Card key={label}><CardContent className="p-5"><div className="flex items-center justify-between"><p className="text-xs text-muted">{label}</p><Icon className="h-4 w-4 text-primary" /></div><p className="mt-4 text-2xl font-semibold tracking-tight">{value}</p><p className="mt-1 truncate text-[10px] text-zinc-600">{note}</p></CardContent></Card>
         ))}
       </div>
 

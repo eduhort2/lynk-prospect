@@ -20,9 +20,9 @@ export function weeklyLeadData(leads: Lead[], weeks = 7) {
 export function funnelData(leads: Lead[]) {
   const stages = [
     { name: "Leads", statuses: null, fill: "#1f5ebf" },
-    { name: "Contato", statuses: ["Contato enviado", "Respondeu", "Reunião marcada", "Proposta enviada", "Negociação", "Fechado"], fill: "#2F7DFF" },
+    { name: "Contato", statuses: ["Contato enviado", "Respondeu", "Reunião marcada", "Proposta enviada", "Negociação", "Fechado"], fill: "#8CE739" },
     { name: "Respostas", statuses: ["Respondeu", "Reunião marcada", "Proposta enviada", "Negociação", "Fechado"], fill: "#4b8cff" },
-    { name: "Propostas", statuses: ["Proposta enviada", "Negociação", "Fechado"], fill: "#73A7FF" },
+    { name: "Propostas", statuses: ["Proposta enviada", "Negociação", "Fechado"], fill: "#B2F476" },
     { name: "Fechados", statuses: ["Fechado"], fill: "#a6c6ff" },
   ];
   return stages.map((stage) => ({ ...stage, value: stage.statuses ? leads.filter((lead) => stage.statuses!.includes(lead.status)).length : leads.length }));

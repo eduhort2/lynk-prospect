@@ -1,8 +1,8 @@
-# LYNK Prospect v1.1
+# LYNK Prospect v2.0
 
 CRM de prospecção, pipeline comercial e gerenciamento de landing pages desenvolvido pela LYNK.
 
-## O que está pronto na v1.0
+## Produto
 
 - Autenticação por e-mail e senha, recuperação de senha e criação do primeiro acesso.
 - Isolamento multiempresa com organizações, membros, papéis e Row Level Security.
@@ -18,25 +18,29 @@ CRM de prospecção, pipeline comercial e gerenciamento de landing pages desenvo
 - Criador de prompts com validação, edição, cópia e histórico.
 - Relatórios básicos e exportação CSV.
 - Perfil, organização e visualização da equipe.
-- Estrutura de banco e contratos TypeScript para IA, WhatsApp e deploy automático na fase futura.
+- Geração de prospecção por nicho, região, quantidade e presença digital usando Google Places.
+- Exportação da pesquisa no mesmo padrão de 23 colunas da planilha diária.
+- Planos Gratuito, Starter, Pro e Business, com limites por organização.
+- Checkout, portal de cobrança e webhooks Stripe preparados para produção.
+- Créditos mensais, rate limiting, auditoria e bloqueio de recursos por plano.
+- Identidade oficial da LYNK e interface redesenhada para uso comercial.
 
 ## Stack
 
-Next.js 15, TypeScript, App Router, Tailwind CSS, componentes no padrão shadcn/ui, Lucide, Supabase, TanStack Query, React Hook Form, Zod, Recharts e dnd-kit.
+Next.js 15, TypeScript, App Router, Tailwind CSS, Lucide, Supabase, TanStack Query, React Hook Form, Zod, Stripe, Google Places, Recharts e dnd-kit.
 
 ## Início rápido
 
 1. Leia [docs/instalação.md](docs/instalação.md).
-2. Execute [supabase/schema.sql](supabase/schema.sql) no Supabase.
-3. Copie `.env.example` para `.env.local` e preencha as duas variáveis públicas do Supabase.
+2. Em uma instalação existente, execute [003_commercial_saas.sql](supabase/migrations/003_commercial_saas.sql).
+3. Copie `.env.example` para `.env.local` e configure Supabase. Stripe e Google Places podem permanecer vazios até a ativação.
 4. Rode `npm install` e `npm run dev`.
 
-As chaves de OpenAI, WhatsApp, Netlify e Vercel não são necessárias na v1.1.
-
-Se a v1.0 já estiver instalada, execute também [supabase/migrations/002_daily_prospecting_import.sql](supabase/migrations/002_daily_prospecting_import.sql).
+As integrações pagas falham de forma segura quando suas chaves não estão configuradas: nenhum checkout ou consumo externo é iniciado.
 
 ## Documentação
 
 - [Instalação local](docs/instalação.md)
 - [Deploy na Vercel](docs/deploy.md)
 - [Roadmap do produto](docs/roadmap.md)
+- [Checklist de ativação comercial](docs/ativacao-v2.md)

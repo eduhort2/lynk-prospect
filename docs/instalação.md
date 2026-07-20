@@ -37,6 +37,16 @@ Em **Authentication > URL Configuration**:
 
 Para testar mais rapidamente, é possível desativar temporariamente a confirmação de e-mail em **Authentication > Providers > Email**. Em produção, mantenha a confirmação ativada.
 
+### Atualização da v1.1 para a v2.0 comercial
+
+Depois do schema e da migration 002, execute:
+
+```text
+supabase/migrations/003_commercial_saas.sql
+```
+
+Essa migração cria planos, assinaturas, créditos, pesquisas, auditoria e limites. Organizações existentes recebem Business como contas fundadoras; novos cadastros começam no Gratuito.
+
 ## 4. Configurar as variáveis de ambiente
 
 Em **Project Settings > API**, copie a URL do projeto e a chave pública `anon`.
@@ -48,6 +58,14 @@ NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_ANON
 SUPABASE_SERVICE_ROLE_KEY=
 
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_STARTER=
+STRIPE_PRICE_PRO=
+STRIPE_PRICE_BUSINESS=
+
+GOOGLE_PLACES_API_KEY=
+
 OPENAI_API_KEY=
 WHATSAPP_API_TOKEN=
 NETLIFY_TOKEN=
@@ -56,7 +74,9 @@ VERCEL_TOKEN=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-A `SUPABASE_SERVICE_ROLE_KEY` e as chaves de integrações futuras devem continuar vazias na fase gratuita. Nunca exponha a service role em variável iniciada por `NEXT_PUBLIC_`.
+A `SUPABASE_SERVICE_ROLE_KEY` é necessária para webhooks, auditoria e ajustes seguros de consumo. Nunca exponha service role, Stripe ou Google Places em variável iniciada por `NEXT_PUBLIC_`.
+
+Enquanto Stripe ou Google Places estiverem vazios, a interface continuará funcionando, mas bloqueará essas operações com uma mensagem de configuração pendente.
 
 ## 5. Rodar localmente
 
