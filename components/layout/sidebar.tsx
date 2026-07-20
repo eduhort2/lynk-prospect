@@ -60,7 +60,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const subscription = useSubscription();
   const planName = subscription.data?.plan?.name || "Gratuito";
   return (
-    <aside className={cn("w-64 border-r border-line bg-[#080B12] flex-col", mobile ? "flex h-full" : "fixed inset-y-0 left-0 z-30 hidden lg:flex")}>
+    <aside className={cn("border-r border-line bg-[#080B12] flex-col", mobile ? "flex h-full w-full" : "fixed inset-y-0 left-0 z-30 hidden w-64 lg:flex")}>
       <div className="flex h-20 items-center border-b border-line px-6"><Logo /></div>
       <div className="mx-4 my-4 rounded-lg border border-line bg-[#111827] p-3">
         <div className="flex items-center justify-between">
