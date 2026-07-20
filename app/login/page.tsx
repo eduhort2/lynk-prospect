@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordStrength } from "@/components/ui/password-strength";
 import { Logo } from "@/components/layout/logo";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import { isStrongPassword, passwordError } from "@/lib/validations/password";
 
 type Mode = "login" | "signup" | "recover";
 
@@ -52,7 +54,8 @@ export default function LoginPage() {
       if (mode === "signup") {
         if (name.trim().length < 2) throw new Error("Informe seu nome completo");
         if (organizationName.trim().length < 2) throw new Error("Informe o nome da empresa");
-        if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres");
+        const validationError = passwordError(password);
+        if (validationError) throw new Error(validationError);
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -143,10 +146,11 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {mode === "signup" ? <PasswordStrength password={password} /> : null}
               </div>
             ) : null}
 
-            <Button type="submit" size="lg" className="w-full" disabled={loading}>
+            <Button type="submit" size="lg" className="w-full" disabled={loading || (mode === "signup" && !isStrongPassword(password))}>
               {loading ? "Aguarde..." : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : "Enviar link"}
               {!loading ? <ArrowRight className="h-4 w-4" /> : null}
             </Button>
