@@ -29,11 +29,20 @@ export function PromptsPage() {
     defaultValues: { company_name: "", segment: "", city: "", differentiators: "", instagram: "", objective: "Gerar contatos e pedidos de orçamento" },
   });
 
-  function generate(values: PromptFormValues) {
+  async function generate(values: PromptFormValues) {
     setSource(values);
-    setPrompt(buildLandingPagePrompt(values));
+    const basePrompt = buildLandingPagePrompt(values);
+    setPrompt(basePrompt);
     setCopied(false);
-    toast.success("Prompt gerado");
+    try {
+      const response = await fetch("/api/ai/prompt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ values, basePrompt }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "IA indisponível");
+      setPrompt(data.prompt || basePrompt);
+      toast.success(data.mode === "ai" ? "Prompt aprimorado com IA econômica" : "Prompt gerado localmente");
+    } catch (error) {
+      toast.success("Prompt gerado localmente", { description: error instanceof Error ? error.message : "A IA pode ser configurada depois." });
+    }
   }
 
   async function copy(value = prompt) {

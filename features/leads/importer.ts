@@ -46,7 +46,14 @@ const aliases: Record<string, string[]> = {
   response: ["resposta", "retorno"],
   offered_value: ["valor oferecido", "valor", "preço", "preco"],
   observations: ["observações", "observacoes", "observação", "observacao"],
+  whatsapp_opt_in: ["consentimento whatsapp", "opt-in whatsapp", "optin whatsapp", "autorizou whatsapp"],
+  whatsapp_opt_in_source: ["origem do consentimento", "fonte do consentimento"],
 };
+
+function parseBoolean(value: unknown) {
+  const normalized = normalizeSpreadsheetKey(String(value ?? ""));
+  return ["sim", "yes", "true", "1", "autorizado", "confirmado"].includes(normalized);
+}
 
 function getRaw(row: Record<string, unknown>, field: keyof typeof aliases) {
   const normalized = Object.fromEntries(
@@ -136,6 +143,9 @@ function mapRow(row: Record<string, unknown>, fileName: string): ImportedLeadRow
     contact_name: getText(row, "contact_name") || null,
     phone: phone || null,
     whatsapp: phone || null,
+    whatsapp_opt_in: parseBoolean(getRaw(row, "whatsapp_opt_in")),
+    whatsapp_opt_in_source: getText(row, "whatsapp_opt_in_source") || null,
+    whatsapp_opt_in_at: parseBoolean(getRaw(row, "whatsapp_opt_in")) ? new Date().toISOString() : null,
     email: getText(row, "email") || null,
     segment: getText(row, "segment") || null,
     city: city || null,

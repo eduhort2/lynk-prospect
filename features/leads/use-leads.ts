@@ -54,6 +54,7 @@ export function useCreateLead() {
           phone: values.phone,
           city: values.city,
         }),
+        whatsapp_opt_in_at: values.whatsapp_opt_in ? new Date().toISOString() : null,
       };
       const { data, error } = await supabase.from("leads").insert(payload).select().single();
       if (error) throw error;
@@ -74,6 +75,7 @@ export function useUpdateLead() {
         ...values,
         state: values.state?.toUpperCase() || values.state,
         ...(values.status && !values.prospecting_status ? { prospecting_status: values.status } : {}),
+        ...(values.whatsapp_opt_in !== undefined ? { whatsapp_opt_in_at: values.whatsapp_opt_in ? new Date().toISOString() : null } : {}),
       };
       const { data, error } = await supabase.from("leads").update(payload).eq("id", id).select().single();
       if (error) throw error;
@@ -123,7 +125,7 @@ export function useImportLeads() {
         .select("id");
       if (error) throw error;
       const imported = data?.length || 0;
-      return { total: rows.length, imported, skipped: rows.length - imported };
+      return { total: rows.length, imported, skipped: rows.length - imported, ids: (data || []).map((row: { id: string }) => row.id) };
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leads", organizationId] }),
   });

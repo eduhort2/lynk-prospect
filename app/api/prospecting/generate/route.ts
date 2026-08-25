@@ -81,7 +81,9 @@ export async function POST(request: Request) {
     } catch {
       // O erro original é preservado mesmo se o registro administrativo estiver indisponível.
     }
-    if (error instanceof Error && error.message === "GOOGLE_PLACES_NOT_CONFIGURED") return Response.json({ error: "A pesquisa automática ainda não foi ativada pela LYNK." }, { status: 503 });
+    if (error instanceof Error && error.message === "GOOGLE_PLACES_NOT_CONFIGURED") return Response.json({ error: "A pesquisa do Google Places não foi configurada. Use PROSPECTING_PROVIDER=openstreetmap para a opção gratuita." }, { status: 503 });
+    if (error instanceof Error && error.message === "OSM_REGION_NOT_FOUND") return Response.json({ error: "A região não foi encontrada. Tente cidade e UF, por exemplo: Curitiba, PR." }, { status: 404 });
+    if (error instanceof Error && (error.message.startsWith("OVERPASS_") || error.message.startsWith("OSM_"))) return Response.json({ error: "A fonte pública gratuita está temporariamente ocupada. Aguarde alguns minutos e tente novamente." }, { status: 503 });
     if (error instanceof z.ZodError) return Response.json({ error: error.issues[0]?.message || "Dados inválidos" }, { status: 400 });
     return accessErrorResponse(error);
   }

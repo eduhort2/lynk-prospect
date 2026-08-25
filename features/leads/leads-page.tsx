@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Download, ExternalLink, FileSpreadsheet, Filter, Plus, Search, Upload } from "lucide-react";
+import { Copy, Download, ExternalLink, FileSpreadsheet, Filter, Plus, Search, Trash2, Upload } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -38,6 +38,8 @@ export function LeadsPage() {
   const [viewing, setViewing] = useState<Lead | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const filtered = useMemo(() => {
     const query = normalize(search);
@@ -102,6 +104,32 @@ export function LeadsPage() {
     }
   }
 
+  async function sendViaApi(lead: Lead, channel: "whatsapp" | "email") {
+    try {
+      const response = await fetch(`/api/${channel}/send`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ leadId: lead.id }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível enviar");
+      await leadsQuery.refetch();
+      toast.success(channel === "whatsapp" ? "Mensagem enviada pelo WhatsApp" : "E-mail enviado pelo domínio da LYNK");
+    } catch (error) {
+      toast.error("Envio não realizado", { description: error instanceof Error ? error.message : "Revise a integração." });
+    }
+  }
+
+  async function clearAll() {
+    setClearing(true);
+    try {
+      const response = await fetch("/api/leads/clear", { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível limpar os leads");
+      await leadsQuery.refetch();
+      setClearOpen(false);
+      toast.success(`${data.deleted} leads removidos`);
+    } catch (error) {
+      toast.error("Limpeza não concluída", { description: error instanceof Error ? error.message : "Tente novamente." });
+    } finally { setClearing(false); }
+  }
+
   async function handleImport(file?: File) {
     if (!file) return;
     try {
@@ -109,6 +137,13 @@ export function LeadsPage() {
       const parsed = parseProspectingWorkbook(workbook, file.name);
       if (!parsed.rows.length) throw new Error("Nenhum lead válido foi encontrado na planilha");
       const result = await importLeads.mutateAsync(parsed.rows);
+      if (result.ids.length) {
+        const dispatch = await fetch("/api/whatsapp/send-batch", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ leadIds: result.ids }) });
+        if (dispatch.ok) {
+          const automation = await dispatch.json();
+          if (automation.sent) toast.success(`${automation.sent} primeiros contatos enviados automaticamente`);
+        }
+      }
       toast.success(`Planilha lida: ${result.imported} novos leads`, {
         description: `${result.skipped} duplicados ignorados · aba ${parsed.sheetName}`,
       });
@@ -127,6 +162,8 @@ export function LeadsPage() {
       Segmento: "Restaurante",
       Bairro: "Centro",
       Telefone: "+5541999999999",
+      "Consentimento WhatsApp": "Não",
+      "Origem do consentimento": "",
       Instagram: "https://www.instagram.com/empresa/",
       "Status do site": "Site institucional não localizado; reconfirmar",
       "Diferenciais observados": "Diferenciais confirmados na pesquisa",
@@ -152,14 +189,14 @@ export function LeadsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="CRM" title="Leads" description="Centralize contatos, contexto e progresso de cada oportunidade comercial." actions={<><Button variant="secondary" onClick={downloadModel}><Download className="h-4 w-4" /> Modelo</Button><Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={importLeads.isPending}><Upload className="h-4 w-4" /> {importLeads.isPending ? "Importando..." : "Importar Excel"}</Button><Button onClick={openCreate}><Plus className="h-4 w-4" /> Novo lead</Button><input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(event) => handleImport(event.target.files?.[0])} /></>}/>
+      <PageHeader eyebrow="CRM" title="Leads" description="Centralize contatos, contexto e progresso de cada oportunidade comercial." actions={<><Button variant="ghost" className="text-red-300" onClick={() => setClearOpen(true)} disabled={!leadsQuery.data?.length}><Trash2 className="h-4 w-4" /> Limpar leads</Button><Button variant="secondary" onClick={downloadModel}><Download className="h-4 w-4" /> Modelo</Button><Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={importLeads.isPending}><Upload className="h-4 w-4" /> {importLeads.isPending ? "Importando..." : "Importar Excel"}</Button><Button onClick={openCreate}><Plus className="h-4 w-4" /> Novo lead</Button><input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(event) => handleImport(event.target.files?.[0])} /></>}/>
 
       <Card>
         <div className="flex flex-col gap-3 border-b border-line p-4 sm:flex-row">
           <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar empresa, contato, cidade..." className="pl-10" /></div>
           <div className="flex gap-2"><div className="relative min-w-44"><Filter className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-600" /><Select className="pl-9" value={status} onChange={(event) => setStatus(event.target.value as LeadStatus | "")}><option value="">Todos os status</option>{LEAD_STATUSES.map((item) => <option key={item}>{item}</option>)}</Select></div><Select className="min-w-36" value={priority} onChange={(event) => setPriority(event.target.value as Priority | "")}><option value="">Prioridade</option><option>Alta</option><option>Média</option><option>Baixa</option></Select></div>
         </div>
-        {leadsQuery.isLoading ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <LeadsTable leads={filtered} onView={setViewing} onContact={contactLead} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} />}
+        {leadsQuery.isLoading ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <LeadsTable leads={filtered} onView={setViewing} onContact={contactLead} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} onWhatsAppApi={(lead) => sendViaApi(lead, "whatsapp")} onEmail={(lead) => sendViaApi(lead, "email")} />}
         {!leadsQuery.isLoading && leadsQuery.data?.length ? <div className="border-t border-line px-5 py-3 text-xs text-zinc-600">Mostrando {filtered.length} de {leadsQuery.data.length} leads</div> : null}
       </Card>
 
@@ -179,6 +216,7 @@ export function LeadsPage() {
         </div> : null}
       </Dialog>
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} title="Excluir lead" description="Esta ação remove o lead e o histórico vinculado." size="md"><p className="text-sm text-zinc-400">Tem certeza que deseja excluir <span className="font-medium text-white">{deleteTarget?.company_name}</span>?</p><div className="mt-6 flex justify-end gap-2"><Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancelar</Button><Button variant="danger" onClick={confirmDelete} disabled={deleteLead.isPending}>{deleteLead.isPending ? "Excluindo..." : "Excluir definitivamente"}</Button></div></Dialog>
+      <Dialog open={clearOpen} onClose={() => setClearOpen(false)} title="Limpar todos os leads" description="Clientes e projetos permanecem, mas leads e históricos vinculados serão removidos." size="md"><p className="text-sm leading-relaxed text-zinc-400">Esta ação exclui todos os <strong className="text-white">{leadsQuery.data?.length || 0} leads</strong> da organização atual. Use-a antes de iniciar uma nova lista de prospecção.</p><div className="mt-6 flex justify-end gap-2"><Button variant="ghost" onClick={() => setClearOpen(false)}>Cancelar</Button><Button variant="danger" onClick={clearAll} disabled={clearing}>{clearing ? "Limpando..." : "Excluir todos os leads"}</Button></div></Dialog>
     </>
   );
 }

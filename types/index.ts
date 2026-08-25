@@ -40,6 +40,10 @@ export interface Lead {
   contact_name: string | null;
   phone: string | null;
   whatsapp: string | null;
+  whatsapp_opt_in: boolean;
+  whatsapp_opt_in_at: string | null;
+  whatsapp_opt_in_source: string | null;
+  whatsapp_last_message_id: string | null;
   email: string | null;
   segment: string | null;
   city: string | null;
@@ -68,6 +72,7 @@ export interface Lead {
   response: string | null;
   offered_value: number | null;
   observations: string | null;
+  email_status: string | null;
   created_at: string;
   updated_at: string;
   responsible?: Pick<Profile, "id" | "name" | "email"> | null;
