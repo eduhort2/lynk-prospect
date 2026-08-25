@@ -7,7 +7,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary px-4 py-2.5 text-white shadow-[0_8px_28px_rgba(17,24,39,.3)] hover:bg-[#465C89] hover:shadow-[0_10px_34px_rgba(56,74,114,.34)]",
+        default: "bg-primary px-4 py-2.5 text-black shadow-[0_8px_28px_rgba(195,223,234,.12)] hover:bg-[#D8EEF6] hover:shadow-[0_10px_34px_rgba(195,223,234,.2)]",
         secondary: "border border-line bg-surface px-4 py-2.5 text-white hover:border-primary/25 hover:bg-white/[.05]",
         ghost: "px-3 py-2 text-zinc-300 hover:bg-white/[.06] hover:text-white",
         danger: "bg-red-500/12 px-4 py-2.5 text-red-300 hover:bg-red-500/20",

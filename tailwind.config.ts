@@ -11,18 +11,18 @@ const config: Config = {
     extend: {
       colors: {
         background: "#000000",
-        card: "#111827",
-        surface: "#182033",
-        line: "#28344D",
-        muted: "#A8AEBB",
+        card: "#101212",
+        surface: "#171A1A",
+        line: "#2B3030",
+        muted: "#9DA4A5",
         primary: {
-          DEFAULT: "#384A72",
-          light: "#AABCE1",
-          dark: "#111827",
+          DEFAULT: "#C3DFEA",
+          light: "#E8F6FB",
+          dark: "#253036",
         },
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(170, 188, 225, 0.14), 0 12px 38px rgba(17, 24, 39, 0.28)",
+        glow: "0 0 0 1px rgba(195, 223, 234, 0.14), 0 12px 38px rgba(0, 0, 0, 0.28)",
         panel: "0 22px 70px rgba(0, 0, 0, 0.32)",
       },
       backgroundImage: {

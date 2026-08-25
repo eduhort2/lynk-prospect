@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, ExternalLink, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Eye, ExternalLink, Mail, MessageCircle, MoreHorizontal, Pencil, Send, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,15 @@ const statusTone: Record<string, "blue" | "green" | "amber" | "red" | "gray" | "
   Perdido: "red",
 };
 
-export function LeadsTable({ leads, onView, onContact, onEdit, onDelete, onCreate }: {
+export function LeadsTable({ leads, onView, onContact, onEdit, onDelete, onCreate, onWhatsAppApi, onEmail }: {
   leads: Lead[];
   onView: (lead: Lead) => void;
   onContact: (lead: Lead) => void;
   onEdit: (lead: Lead) => void;
   onDelete: (lead: Lead) => void;
   onCreate: () => void;
+  onWhatsAppApi?: (lead: Lead) => void;
+  onEmail?: (lead: Lead) => void;
 }) {
   const [menu, setMenu] = useState<string | null>(null);
 
@@ -53,6 +55,8 @@ export function LeadsTable({ leads, onView, onContact, onEdit, onDelete, onCreat
                   <div className="absolute right-5 top-12 z-20 w-44 rounded-xl border border-line bg-[#111] p-1.5 text-left shadow-2xl">
                     <button onClick={() => { onView(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><Eye className="h-3.5 w-3.5" /> Ver abordagem</button>
                     {(lead.contact_link || lead.whatsapp || lead.instagram) ? <button onClick={() => { onContact(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-primary-light hover:bg-primary/10"><MessageCircle className="h-3.5 w-3.5" /> Abrir e marcar envio</button> : null}
+                    {lead.whatsapp && onWhatsAppApi ? <button onClick={() => { onWhatsAppApi(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-[#C3DFEA] hover:bg-[#C3DFEA]/10"><Send className="h-3.5 w-3.5" /> Enviar via API</button> : null}
+                    {lead.email && onEmail ? <button onClick={() => { onEmail(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><Mail className="h-3.5 w-3.5" /> Enviar e-mail</button> : null}
                     <button onClick={() => { onEdit(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><Pencil className="h-3.5 w-3.5" /> Editar lead</button>
                     {lead.website ? <a href={lead.website} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><ExternalLink className="h-3.5 w-3.5" /> Abrir site</a> : null}
                     <button onClick={() => { onDelete(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-300 hover:bg-red-400/10"><Trash2 className="h-3.5 w-3.5" /> Excluir</button>

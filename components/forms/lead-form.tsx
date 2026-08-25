@@ -15,6 +15,8 @@ const defaultValues: LeadFormValues = {
   contact_name: "",
   phone: "",
   whatsapp: "",
+  whatsapp_opt_in: false,
+  whatsapp_opt_in_source: "",
   email: "",
   segment: "",
   city: "",
@@ -47,6 +49,8 @@ export function LeadForm({
     contact_name: lead.contact_name || "",
     phone: lead.phone || "",
     whatsapp: lead.whatsapp || "",
+    whatsapp_opt_in: lead.whatsapp_opt_in || false,
+    whatsapp_opt_in_source: lead.whatsapp_opt_in_source || "",
     email: lead.email || "",
     segment: lead.segment || "",
     city: lead.city || "",
@@ -100,6 +104,14 @@ export function LeadForm({
         <input type="checkbox" className="h-4 w-4 accent-primary" {...register("has_website")} />
         A empresa já possui site
       </label>
+
+      <div className="rounded-xl border border-line bg-[#090909] p-3">
+        <label className="flex items-start gap-3 text-sm text-zinc-300">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" {...register("whatsapp_opt_in")} />
+          <span><strong className="font-medium text-zinc-100">Consentimento para WhatsApp confirmado</strong><span className="mt-1 block text-xs leading-relaxed text-zinc-500">Marque apenas quando a pessoa autorizou receber mensagens da LYNK. Leads públicos não possuem consentimento automaticamente.</span></span>
+        </label>
+        <div className="mt-3"><Label htmlFor="whatsapp_opt_in_source">Origem do consentimento</Label><Input id="whatsapp_opt_in_source" placeholder="Formulário, evento, indicação com autorização..." {...register("whatsapp_opt_in_source")} /></div>
+      </div>
 
       {hasWebsite ? field("website", "Site atual", "https://empresa.com.br", "url") : null}
 

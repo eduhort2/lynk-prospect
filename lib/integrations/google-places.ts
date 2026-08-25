@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { ProspectingRequest } from "@/lib/validations/prospecting";
+import { searchOpenStreetMapBusinesses } from "./openstreetmap";
 
 type AddressComponent = { longText?: string; shortText?: string; types?: string[] };
 type GooglePlace = {
@@ -33,6 +34,8 @@ function addressPart(components: AddressComponent[] | undefined, type: string, s
 }
 
 export async function searchPublicBusinesses(input: ProspectingRequest): Promise<PublicBusiness[]> {
+  const provider = (process.env.PROSPECTING_PROVIDER || "openstreetmap").toLowerCase();
+  if (provider === "openstreetmap" || provider === "osm") return searchOpenStreetMapBusinesses(input);
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_PLACES_NOT_CONFIGURED");
 

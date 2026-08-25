@@ -6,6 +6,8 @@ export const leadSchema = z.object({
   contact_name: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   whatsapp: z.string().trim().optional(),
+  whatsapp_opt_in: z.boolean(),
+  whatsapp_opt_in_source: z.string().trim().optional(),
   email: z.string().trim().email("E-mail inválido").or(z.literal("")).optional(),
   segment: z.string().trim().optional(),
   city: z.string().trim().optional(),

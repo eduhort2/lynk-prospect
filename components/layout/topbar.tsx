@@ -74,7 +74,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-line bg-black/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-line bg-[#070808]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
           <Button className="lg:hidden" variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menu">
             <Menu className="h-5 w-5" />
@@ -104,13 +104,13 @@ export function Topbar() {
                 <span>Mais</span><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", moreOpen && "rotate-180")} />
               </button>
               {moreOpen ? (
-                <div className="animate-menu-in absolute left-0 top-12 grid w-[430px] grid-cols-2 gap-1 rounded-xl border border-line bg-[#0B101A] p-2 shadow-2xl">
+                <div className="animate-menu-in absolute left-0 top-12 grid w-[430px] grid-cols-2 gap-1 rounded-xl border border-line bg-[#0D0F0F] p-2 shadow-2xl">
                   {moreLinks.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(pathname, item.href);
                     return (
                       <Link key={item.href} href={item.href} className={cn("flex gap-3 rounded-lg p-3 transition-colors", active ? "bg-primary/30" : "hover:bg-white/[.045]")}>
-                        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-[#111827]", active && "border-primary-light/20 text-primary-light")}><Icon className="h-4 w-4" /></div>
+                        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-[#151818]", active && "border-primary-light/20 text-primary-light")}><Icon className="h-4 w-4" /></div>
                         <div><p className="text-xs font-medium text-zinc-100">{item.label}</p><p className="mt-1 text-[10px] leading-4 text-zinc-600">{item.description}</p></div>
                       </Link>
                     );
@@ -123,7 +123,7 @@ export function Topbar() {
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <Link href="/planos" className="hidden rounded-lg border border-primary-light/15 bg-primary/20 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-primary-light xl:block">{planName}</Link>
             <div className="hidden max-w-36 text-right 2xl:block"><p className="truncate text-xs font-medium text-zinc-200">{profile?.name || "Usuário"}</p><p className="truncate text-[10px] text-zinc-600">{organization?.name}</p></div>
-            <Link href="/configuracoes" className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary-light/15 bg-[#111827] text-xs font-semibold text-primary-light" aria-label="Abrir configurações">{initials(profile?.name)}</Link>
+            <Link href="/configuracoes" className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary-light/15 bg-[#151818] text-xs font-semibold text-primary-light" aria-label="Abrir configurações">{initials(profile?.name)}</Link>
             <Button variant="ghost" size="icon" onClick={logout} aria-label="Sair"><LogOut className="h-4 w-4" /></Button>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function Topbar() {
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm lg:hidden" onMouseDown={() => setMobileOpen(false)}>
-          <div className="relative h-full w-72 max-w-[86vw] bg-[#080B12]" onMouseDown={(event) => event.stopPropagation()} onClick={() => setMobileOpen(false)}><Sidebar mobile /></div>
+          <div className="relative h-full w-72 max-w-[86vw] bg-[#090A0A]" onMouseDown={(event) => event.stopPropagation()} onClick={() => setMobileOpen(false)}><Sidebar mobile /></div>
         </div>
       ) : null}
     </>
