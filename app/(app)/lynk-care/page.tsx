@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { HubModulePage } from "@/features/hub/module-page";
 export const metadata: Metadata = { title: "LYNK Care" };
 export default function Page() { return <HubModulePage table="care_subscriptions" title="LYNK Care" eyebrow="Operação" description="Controle contratos recorrentes de manutenção e horas utilizadas." singular="Assinatura" searchKeys={["plan_name","status"]} fields={[
-  { key: "client_id", label: "ID do cliente", required: true },
+  { key: "client_id", label: "Cliente", type: "relation", required: true, relation: { table: "clients", labelKey: "company_name" } },
+  { key: "project_id", label: "Projeto", type: "relation", relation: { table: "projects", labelKey: "name" } },
   { key: "plan_name", label: "Plano", required: true },
   { key: "monthly_value", label: "Valor mensal", type: "number", required: true },
   { key: "included_hours", label: "Horas incluídas", type: "number", defaultValue: 0 },
