@@ -10,23 +10,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#000000",
-        card: "#101212",
-        surface: "#171A1A",
-        line: "#2B3030",
-        muted: "#9DA4A5",
+        background: "#050505",
+        card: "#0D0F10",
+        surface: "#15191B",
+        line: "#252B2E",
+        muted: "#7C8485",
         primary: {
           DEFAULT: "#C3DFEA",
-          light: "#E8F6FB",
-          dark: "#253036",
+          light: "#EAF7FB",
+          dark: "#24343B",
         },
+        accent: {
+          DEFAULT: "#F27E2D",
+          light: "#FF9B55",
+          dark: "#A94B12",
+        },
+        deep: "#173E63",
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(195, 223, 234, 0.14), 0 12px 38px rgba(0, 0, 0, 0.28)",
-        panel: "0 22px 70px rgba(0, 0, 0, 0.32)",
+        glow: "0 0 0 1px rgba(195, 223, 234, 0.14), 0 18px 48px rgba(0, 0, 0, 0.34)",
+        panel: "0 24px 80px rgba(0, 0, 0, 0.36)",
+        accent: "0 18px 46px rgba(242, 126, 45, 0.16)",
       },
       backgroundImage: {
-        grid: "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
+        grid: "linear-gradient(rgba(195,223,234,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(195,223,234,.035) 1px, transparent 1px)",
       },
     },
   },
