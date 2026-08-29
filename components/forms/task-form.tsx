@@ -8,20 +8,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useClients } from "@/features/clients/use-clients";
+import { useProjects } from "@/features/projects/use-projects";
 import { taskSchema, type TaskFormValues } from "@/lib/validations/task";
-import type { Client, Lead, OrganizationMember, Project } from "@/types";
+import type { Lead, OrganizationMember } from "@/types";
 
-export function TaskForm({ initialDate, leads, clients, projects, members, currentUserId, onSubmit, onCancel, loading }: {
+export function TaskForm({ initialDate, leads, members, currentUserId, onSubmit, onCancel, loading }: {
   initialDate?: Date;
   leads: Lead[];
-  clients: Client[];
-  projects: Project[];
   members: OrganizationMember[];
   currentUserId: string;
   onSubmit: (values: TaskFormValues) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }) {
+  const clientsQuery = useClients();
+  const projectsQuery = useProjects();
+  const clients = clientsQuery.data || [];
+  const projects = projectsQuery.data || [];
   const date = initialDate || new Date(Date.now() + 60 * 60 * 1000);
   const { register, handleSubmit, formState: { errors } } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
