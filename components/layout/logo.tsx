@@ -6,12 +6,12 @@ export function Logo({ compact = false, className }: { compact?: boolean; classN
     return (
       <div className={cn("flex items-center", className)}>
         <Image
-          src="/brand/lynk-mark.png"
+          src="/brand/lynk-symbol-current.svg"
           alt="LYNK"
-          width={40}
-          height={40}
+          width={44}
+          height={44}
           priority
-          className="h-9 w-9 object-contain"
+          className="h-10 w-10 object-contain"
         />
       </div>
     );
@@ -20,16 +20,16 @@ export function Logo({ compact = false, className }: { compact?: boolean; classN
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <Image
-        src="/brand/lynk-logo.png"
+        src="/brand/lynk-wordmark-current.svg"
         alt="LYNK"
-        width={140}
-        height={51}
+        width={150}
+        height={64}
         priority
-        className="h-auto w-[132px] object-contain"
+        className="h-auto w-[138px] object-contain"
       />
       <div className="hidden border-l border-white/15 pl-3 sm:block">
-        <p className="text-[10px] font-semibold uppercase tracking-[.22em] text-[#C3DFEA]">Hub</p>
-        <p className="mt-0.5 text-[8px] uppercase tracking-[.16em] text-zinc-600">Gestão interna LYNK</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-primary">Hub</p>
+        <p className="mt-0.5 text-[8px] uppercase tracking-[.16em] text-[#7C8485]">Gestão interna</p>
       </div>
     </div>
   );
