@@ -59,12 +59,11 @@ export function HubModulePage({ table, title, eyebrow, description, singular, fi
     queryFn: async () => {
       const entries = await Promise.all(relationFields.map(async (field) => {
         const relation = field.relation!;
-        const valueKey = relation.valueKey || "id";
-        let request = supabase.from(relation.table).select(`${valueKey},${relation.labelKey}`).eq("organization_id", organizationId!);
+        let request = supabase.from(relation.table).select("*").eq("organization_id", organizationId!);
         request = request.order(relation.orderBy || relation.labelKey, { ascending: true });
         const { data, error } = await request;
         if (error) throw error;
-        return [field.key, data || []] as const;
+        return [field.key, (data || []) as unknown as Record<string, unknown>[]] as const;
       }));
       return Object.fromEntries(entries) as Record<string, Record<string, unknown>[]>;
     },
