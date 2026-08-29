@@ -12,6 +12,7 @@ export default function Page() {
     singular="Proposta"
     searchKeys={["number", "status", "payment_terms"]}
     fields={[
+      { key: "client_id", label: "Cliente", type: "relation", relation: { table: "clients", labelKey: "company_name" } },
       { key: "number", label: "Número", required: true, placeholder: "PROP-2026-001" },
       { key: "proposal_date", label: "Data", type: "date", required: true },
       { key: "valid_until", label: "Validade", type: "date" },
