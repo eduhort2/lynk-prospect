@@ -93,15 +93,15 @@ export default function LoginPage() {
         <Logo />
 
         <div className="max-w-xl">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[.16em] text-primary">Operação comercial</p>
-          <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-[-.035em]">Transforme prospecção em um processo previsível.</h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">Encontre oportunidades, organize sua equipe e acompanhe cada negociação em uma única plataforma.</p>
+          <p className="mb-5 text-xs font-semibold uppercase tracking-[.16em] text-primary">Gestão interna</p>
+          <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-[-.035em]">Toda a operação da LYNK em um só lugar.</h1>
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">Leads, propostas, contratos, projetos, tarefas e financeiro conectados em uma única plataforma.</p>
         </div>
 
         <div className="grid grid-cols-3 border-t border-line pt-8">
-          <div><SearchCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Pesquisa de leads</p></div>
-          <div><BarChart3 className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Gestão do pipeline</p></div>
-          <div><ShieldCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Dados por empresa</p></div>
+          <div><SearchCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Leads e propostas</p></div>
+          <div><BarChart3 className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Operação e projetos</p></div>
+          <div><ShieldCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Gestão por empresa</p></div>
         </div>
       </section>
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md animate-float-in">
           <Logo className="mb-12 lg:hidden" />
           <div className="mb-8">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[.16em] text-primary">LYNK Prospect</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[.16em] text-primary">LYNK Hub</p>
             <h2 className="text-3xl font-semibold tracking-tight">
               {mode === "login" ? "Bem-vindo de volta" : mode === "signup" ? "Criar primeiro acesso" : "Recuperar senha"}
             </h2>
