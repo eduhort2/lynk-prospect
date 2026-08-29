@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentType } from "react";
 import {
   BarChart3,
   CalendarDays,
@@ -11,6 +12,7 @@ import {
   HeartHandshake,
   LayoutDashboard,
   ListFilter,
+  PackageOpen,
   ReceiptText,
   Settings,
   UsersRound,
@@ -22,7 +24,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
 
-type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
+type NavItem = { href: string; label: string; icon: ComponentType<{ className?: string }> };
 type NavGroup = { label: string; items: NavItem[] };
 
 const groups: NavGroup[] = [
@@ -65,6 +67,7 @@ const groups: NavGroup[] = [
     label: "Gestão",
     items: [
       { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
+      { href: "/configuracoes/servicos", label: "Serviços e preços", icon: PackageOpen },
       { href: "/configuracoes", label: "Equipe e configurações", icon: Settings },
     ],
   },
@@ -72,18 +75,13 @@ const groups: NavGroup[] = [
 
 function NavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
-  const active = pathname === item.href || (item.href !== "/financeiro" && pathname.startsWith(`${item.href}/`));
+  const active = pathname === item.href || (item.href !== "/financeiro" && item.href !== "/configuracoes" && pathname.startsWith(`${item.href}/`));
   const Icon = item.icon;
   return (
-    <Link
-      href={item.href}
-      className={cn(
-        "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-        active
-          ? "border border-primary-light/15 bg-primary/[.12] text-white shadow-[inset_3px_0_0_#C3DFEA]"
-          : "border border-transparent text-zinc-500 hover:bg-white/[.035] hover:text-zinc-200",
-      )}
-    >
+    <Link href={item.href} className={cn(
+      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+      active ? "border border-primary-light/15 bg-primary/[.12] text-white shadow-[inset_3px_0_0_#C3DFEA]" : "border border-transparent text-zinc-500 hover:bg-white/[.035] hover:text-zinc-200",
+    )}>
       <Icon className={cn("h-4 w-4", active && "text-primary-light")} />
       <span>{item.label}</span>
     </Link>
@@ -100,12 +98,10 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
         <p className="mt-1 text-[10px] text-zinc-600">Gestão comercial e operacional</p>
       </div>
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
-        {groups.map((group, index) => (
-          <div key={`${group.label}-${index}`}>
-            {group.label ? <p className="mb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">{group.label}</p> : null}
-            <div className="space-y-1">{group.items.map((item) => <NavLink key={item.href} item={item} />)}</div>
-          </div>
-        ))}
+        {groups.map((group, index) => <div key={`${group.label}-${index}`}>
+          {group.label ? <p className="mb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">{group.label}</p> : null}
+          <div className="space-y-1">{group.items.map((item) => <NavLink key={item.href} item={item} />)}</div>
+        </div>)}
       </nav>
     </aside>
   );
