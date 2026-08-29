@@ -28,7 +28,7 @@ export const projectSchema = z.object({
   starts_at: z.string().optional(),
   due_date: z.string().optional(),
   delivered_at: z.string().optional(),
-  contracted_value: z.coerce.number().min(0).optional(),
+  contracted_value: z.number().min(0).optional(),
   observations: z.string().trim().optional(),
 });
 
