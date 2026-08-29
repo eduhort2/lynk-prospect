@@ -4,7 +4,8 @@ import { HubModulePage } from "@/features/hub/module-page";
 export const metadata: Metadata = { title: "Contratos" };
 export default function Page() {
   return <HubModulePage table="contracts" title="Contratos" eyebrow="Clientes" description="Acompanhe contratos enviados, assinados, vigentes e encerrados." singular="Contrato" searchKeys={["number","service","status"]} fields={[
-    { key: "client_id", label: "ID do cliente", required: true, placeholder: "UUID do cliente" },
+    { key: "client_id", label: "Cliente", type: "relation", required: true, relation: { table: "clients", labelKey: "company_name" } },
+    { key: "proposal_id", label: "Proposta de origem", type: "relation", relation: { table: "proposals", labelKey: "number", orderBy: "created_at" } },
     { key: "number", label: "Número", required: true, placeholder: "CTR-2026-001" },
     { key: "service", label: "Serviço", required: true },
     { key: "value", label: "Valor", type: "number", required: true, defaultValue: 0 },
