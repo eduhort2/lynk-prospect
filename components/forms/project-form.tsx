@@ -30,7 +30,7 @@ export function ProjectForm({ project, clients, onSubmit, onCancel, loading }: {
       starts_at: project?.starts_at || "",
       due_date: project?.due_date || "",
       delivered_at: project?.delivered_at || "",
-      contracted_value: project?.contracted_value || 0,
+      contracted_value: project?.contracted_value ?? 0,
       observations: project?.observations || "",
       preview_url: project?.preview_url || "",
       production_url: project?.production_url || "",
@@ -47,7 +47,7 @@ export function ProjectForm({ project, clients, onSubmit, onCancel, loading }: {
       <div><Label htmlFor="description">Descrição</Label><Textarea id="description" placeholder="Resumo do projeto..." {...register("description")} /></div>
       <div><Label htmlFor="scope">Escopo</Label><Textarea id="scope" className="min-h-28" placeholder="Entregáveis, limites e itens contratados..." {...register("scope")} /></div>
       <div><Label htmlFor="briefing">Briefing</Label><Textarea id="briefing" className="min-h-28" placeholder="Objetivo, público, referências e requisitos..." {...register("briefing")} /></div>
-      <div className="grid gap-4 sm:grid-cols-4"><div><Label htmlFor="starts_at">Início</Label><Input id="starts_at" type="date" {...register("starts_at")} /></div><div><Label htmlFor="due_date">Prazo</Label><Input id="due_date" type="date" {...register("due_date")} /></div><div><Label htmlFor="delivered_at">Entrega</Label><Input id="delivered_at" type="date" {...register("delivered_at")} /></div><div><Label htmlFor="contracted_value">Valor contratado</Label><Input id="contracted_value" type="number" step="0.01" {...register("contracted_value")} /></div></div>
+      <div className="grid gap-4 sm:grid-cols-4"><div><Label htmlFor="starts_at">Início</Label><Input id="starts_at" type="date" {...register("starts_at")} /></div><div><Label htmlFor="due_date">Prazo</Label><Input id="due_date" type="date" {...register("due_date")} /></div><div><Label htmlFor="delivered_at">Entrega</Label><Input id="delivered_at" type="date" {...register("delivered_at")} /></div><div><Label htmlFor="contracted_value">Valor contratado</Label><Input id="contracted_value" type="number" step="0.01" {...register("contracted_value", { setValueAs: (value) => value === "" ? undefined : Number(value) })} /></div></div>
       <div className="grid gap-4 sm:grid-cols-3"><div><Label htmlFor="preview_url">URL de preview</Label><Input id="preview_url" type="url" placeholder="https://..." {...register("preview_url")} /></div><div><Label htmlFor="production_url">URL publicada</Label><Input id="production_url" type="url" placeholder="https://..." {...register("production_url")} /></div><div><Label htmlFor="repository_url">Repositório</Label><Input id="repository_url" type="url" placeholder="https://github.com/..." {...register("repository_url")} /></div></div>
       <div><Label htmlFor="observations">Observações internas</Label><Textarea id="observations" {...register("observations")} /></div>
       {(errors.preview_url || errors.production_url || errors.repository_url) ? <p className="text-xs text-red-400">Preencha somente URLs completas, começando com https://</p> : null}
