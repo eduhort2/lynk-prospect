@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export function BrandLoader() {
@@ -20,13 +19,13 @@ export function BrandLoader() {
       aria-label="Carregando LYNK Hub"
     >
       <div className="brand-loader__content flex flex-col items-center">
-        <Image
-          src="/brand/lynk-symbol-current.svg"
+        <img
+          src="/icon"
           alt="Símbolo LYNK"
-          width={104}
-          height={104}
-          priority
-          className="brand-loader__logo h-20 w-20 object-contain sm:h-24 sm:w-24"
+          width={96}
+          height={96}
+          draggable={false}
+          className="brand-loader__logo h-20 w-20 rounded-[22px] object-contain sm:h-24 sm:w-24"
         />
         <p className="mt-5 text-[11px] font-semibold uppercase tracking-[.3em] text-primary">LYNK Hub</p>
         <div className="brand-loader__track mt-5 h-px w-36 overflow-hidden bg-white/10 sm:w-44">
