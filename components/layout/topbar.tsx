@@ -1,68 +1,24 @@
 "use client";
 
-import {
-  BarChart3,
-  CalendarDays,
-  ChevronDown,
-  ContactRound,
-  FileCheck2,
-  FileText,
-  FolderKanban,
-  LayoutDashboard,
-  ListFilter,
-  LogOut,
-  Menu,
-  ReceiptText,
-  Settings,
-  UsersRound,
-  WalletCards,
-} from "lucide-react";
+import { Bell, CircleHelp, LogOut, Menu, Search } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useOrganization } from "@/features/auth/organization-provider";
 import { createBrowserSupabase } from "@/lib/supabase/client";
-import { cn, initials } from "@/lib/utils";
+import { initials } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 
-const mainLinks = [
-  { href: "/dashboard", label: "Início", icon: LayoutDashboard },
-  { href: "/leads", label: "Leads", icon: ContactRound },
-  { href: "/pipeline", label: "Pipeline", icon: ListFilter },
-  { href: "/agenda", label: "Agenda", icon: CalendarDays },
-  { href: "/propostas", label: "Propostas", icon: FileText },
-];
-
-const moreLinks = [
-  { href: "/clientes", label: "Clientes", description: "Relacionamento e histórico", icon: UsersRound },
-  { href: "/contratos", label: "Contratos", description: "Controle contratual", icon: FileCheck2 },
-  { href: "/projetos", label: "Projetos", description: "Entregas e produção", icon: FolderKanban },
-  { href: "/financeiro", label: "Financeiro", description: "Recebimentos e recorrência", icon: WalletCards },
-  { href: "/documentos", label: "Documentos", description: "Arquivos dos clientes", icon: ReceiptText },
-  { href: "/relatorios", label: "Relatórios", description: "Resultados da operação", icon: BarChart3 },
-  { href: "/configuracoes", label: "Configurações", description: "Perfil, equipe e empresa", icon: Settings },
-];
-
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 export function Topbar() {
-  const pathname = usePathname();
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const { profile, organization } = useOrganization();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreActive = moreLinks.some((item) => isActive(pathname, item.href));
-
-  useEffect(() => {
-    setMoreOpen(false);
-    setMobileOpen(false);
-  }, [pathname]);
+  const [query, setQuery] = useState("");
 
   async function logout() {
     const { error } = await supabase.auth.signOut();
@@ -71,38 +27,70 @@ export function Topbar() {
     router.refresh();
   }
 
+  function search(event: FormEvent) {
+    event.preventDefault();
+    const value = query.trim();
+    router.push(value ? `/leads?search=${encodeURIComponent(value)}` : "/leads");
+  }
+
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-line bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
-          <Button className="lg:hidden" variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Menu className="h-5 w-5" /></Button>
-          <Link href="/dashboard" className="shrink-0" aria-label="Ir para o início"><Logo /></Link>
-          <div className="hidden h-7 w-px bg-line lg:block" />
+      <header className="sticky top-0 z-40 border-b border-line bg-background/88 backdrop-blur-2xl">
+        <div className="flex h-[72px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <Button className="lg:hidden" variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menu">
+            <Menu className="h-5 w-5" />
+          </Button>
 
-          <nav className="hidden min-w-0 flex-1 items-center gap-1 lg:flex" aria-label="Navegação principal">
-            {mainLinks.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(pathname, item.href);
-              return <Link key={item.href} href={item.href} className={cn("relative flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors xl:text-sm", active ? "bg-primary/[.09] text-white" : "text-muted hover:bg-white/[.04] hover:text-zinc-200")}><Icon className={cn("h-4 w-4", active ? "text-accent" : "text-primary/65")} /><span>{item.label}</span>{active ? <span className="absolute inset-x-3 -bottom-[19px] h-0.5 rounded-full bg-accent" /> : null}</Link>;
-            })}
+          <Link href="/dashboard" className="shrink-0 lg:hidden" aria-label="Ir para o início">
+            <Logo compact />
+          </Link>
+
+          <form onSubmit={search} className="hidden w-full max-w-xl lg:block">
             <div className="relative">
-              <button type="button" onClick={() => setMoreOpen((value) => !value)} className={cn("flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors xl:text-sm", moreActive || moreOpen ? "bg-primary/[.09] text-white" : "text-muted hover:bg-white/[.04] hover:text-zinc-200")} aria-expanded={moreOpen}><span>Mais</span><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", moreOpen && "rotate-180")} /></button>
-              {moreOpen ? <div className="animate-menu-in absolute left-0 top-12 grid w-[430px] grid-cols-2 gap-1 rounded-xl border border-line bg-card p-2 shadow-2xl">{moreLinks.map((item) => {
-                const Icon = item.icon; const active = isActive(pathname, item.href);
-                return <Link key={item.href} href={item.href} className={cn("flex gap-3 rounded-lg p-3 transition-colors", active ? "bg-primary/[.08]" : "hover:bg-white/[.045]")}><div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface", active ? "border-accent/25 text-accent" : "text-primary/70")}><Icon className="h-4 w-4" /></div><div><p className="text-xs font-medium text-zinc-100">{item.label}</p><p className="mt-1 text-[10px] leading-4 text-muted">{item.description}</p></div></Link>;
-              })}</div> : null}
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar empresa, contato, cidade..."
+                className="h-10 border-white/[.06] bg-card/70 pl-10 pr-16"
+                aria-label="Busca global"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-line bg-surface px-1.5 py-0.5 text-[9px] text-zinc-600">Enter</span>
             </div>
-          </nav>
+          </form>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            <div className="hidden max-w-36 text-right 2xl:block"><p className="truncate text-xs font-medium text-zinc-200">{profile?.name || "Usuário"}</p><p className="truncate text-[10px] text-muted">{organization?.name}</p></div>
-            <Link href="/configuracoes" className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/15 bg-surface text-xs font-semibold text-primary" aria-label="Abrir configurações">{initials(profile?.name)}</Link>
-            <Button variant="ghost" size="icon" onClick={logout} aria-label="Sair"><LogOut className="h-4 w-4" /></Button>
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" aria-label="Notificações" className="hidden sm:inline-flex">
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Ajuda" className="hidden md:inline-flex">
+              <CircleHelp className="h-4 w-4" />
+            </Button>
+
+            <div className="hidden h-7 w-px bg-line sm:block" />
+
+            <Link href="/configuracoes" className="flex items-center gap-2 rounded-xl border border-transparent p-1.5 pr-2 transition hover:border-line hover:bg-white/[.025]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/15 bg-surface text-xs font-semibold text-primary">{initials(profile?.name)}</span>
+              <span className="hidden min-w-0 text-left xl:block">
+                <span className="block max-w-36 truncate text-xs font-medium text-zinc-200">{profile?.name || "Usuário"}</span>
+                <span className="mt-0.5 block max-w-36 truncate text-[10px] text-muted">{organization?.name || "LYNK Hub"}</span>
+              </span>
+            </Link>
+
+            <Button variant="ghost" size="icon" onClick={logout} aria-label="Sair">
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
 
-      {mobileOpen ? <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm lg:hidden" onMouseDown={() => setMobileOpen(false)}><div className="relative h-full w-72 max-w-[86vw] bg-background" onMouseDown={(event) => event.stopPropagation()} onClick={() => setMobileOpen(false)}><Sidebar mobile /></div></div> : null}
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm lg:hidden" onMouseDown={() => setMobileOpen(false)}>
+          <div className="relative h-full w-[min(84vw,320px)] bg-background" onMouseDown={(event) => event.stopPropagation()} onClick={() => setMobileOpen(false)}>
+            <Sidebar mobile />
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
