@@ -6,21 +6,23 @@ Esta evolução transforma o LYNK Prospect no sistema interno LYNK Hub sem recon
 
 ## Ordem de atualização
 
-1. Faça backup do banco Supabase antes da migration.
+1. Faça backup do banco Supabase antes das migrations.
 2. Publique/teste primeiro a branch `feat/lynk-hub` em Preview na Vercel.
 3. No Supabase do ambiente de teste, execute `supabase/migrations/005_lynk_hub.sql`.
-4. Valide autenticação, organização, RLS e os módulos abaixo.
-5. Somente depois promova a versão para produção.
+4. Execute também `supabase/migrations/006_google_calendar.sql` para habilitar a conexão segura do Google Calendar.
+5. Valide autenticação, organização, RLS e os módulos abaixo.
+6. Somente depois promova a versão para produção.
 
-## Migration
+## Migrations
 
-Arquivo:
+Arquivos:
 
 ```text
 supabase/migrations/005_lynk_hub.sql
+supabase/migrations/006_google_calendar.sql
 ```
 
-A migration:
+A migration `005_lynk_hub.sql`:
 
 - preserva leads, clientes, tarefas e projetos existentes;
 - remove os triggers que limitavam membros/leads por plano;
@@ -32,15 +34,44 @@ A migration:
 - mantém a conversão de lead fechado em cliente;
 - cria o catálogo inicial de serviços por organização.
 
+A migration `006_google_calendar.sql` cria `google_calendar_connections`. Essa tabela guarda os tokens OAuth somente para rotas server-side e não possui policy de leitura para `authenticated` ou `anon`.
+
 ## Variáveis obrigatórias
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_APP_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` é opcional e somente deve existir no servidor quando alguma rotina administrativa/legada realmente precisar dela. Nunca exponha essa chave no frontend.
+A `SUPABASE_SERVICE_ROLE_KEY`, o Client Secret do Google e os tokens OAuth nunca podem ser enviados ao browser.
+
+## Configuração do Google OAuth e Calendar
+
+1. No Google Cloud Console, crie ou selecione o projeto usado pela LYNK.
+2. Habilite a **Google Calendar API**.
+3. Configure a tela de consentimento OAuth e adicione o escopo `https://www.googleapis.com/auth/calendar.events`.
+4. Crie um OAuth Client do tipo **Web application**.
+5. Em **Authorized redirect URIs**, adicione o callback exibido no provider Google do seu projeto Supabase, normalmente no formato `https://<project-ref>.supabase.co/auth/v1/callback`.
+6. No Supabase Dashboard, abra Authentication → Providers → Google, habilite o provider e informe o mesmo Client ID e Client Secret.
+7. Em Authentication → URL Configuration, adicione os callbacks do Hub na Redirect Allow List, incluindo o preview da branch e o domínio de produção quando for publicado.
+8. Na Vercel, cadastre `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` e `SUPABASE_SERVICE_ROLE_KEY` apenas como variáveis server-side.
+
+O login do Hub solicita `access_type=offline` e `prompt=consent` para que o Google forneça refresh token. O callback salva os tokens no servidor e a aplicação renova o access token quando necessário.
+
+## Funcionamento da Agenda integrada
+
+- o login possui a opção **Continuar com Google**;
+- a Agenda mostra o estado da conexão com o Google;
+- eventos do calendário principal do usuário aparecem na visualização mensal, semanal e diária;
+- eventos vindos do Google são destacados visualmente e podem ser abertos no Google Calendar;
+- ao criar uma nova tarefa no Hub com o Google conectado, o sistema cria também um evento de 1 hora no calendário principal;
+- se a criação no Google falhar, a tarefa do Hub é preservada e o usuário recebe um aviso.
+
+Nesta etapa, alterações de status/exclusões de tarefas já existentes no Hub não removem automaticamente o evento correspondente no Google porque ainda não existe um `google_event_id` persistido em `tasks`. Isso pode ser adicionado em uma etapa posterior caso seja necessário sincronismo bidirecional completo.
 
 ## Variáveis que deixam de ser necessárias para o fluxo interno
 
@@ -62,10 +93,12 @@ Se alguma rota legada ainda for usada manualmente, mantenha apenas a variável e
 
 ### Autenticação e isolamento
 
-- entrar com usuário válido;
+- entrar com usuário válido por e-mail/senha;
+- entrar com Google;
+- validar consentimento do Google Calendar;
 - validar organização atual;
 - validar que um usuário não consulta registros de outra organização;
-- confirmar que nenhuma service role é enviada ao browser.
+- confirmar que nenhuma service role ou token Google é enviado ao browser.
 
 ### Leads e pipeline
 
@@ -114,6 +147,9 @@ Se alguma rota legada ainda for usada manualmente, mantenha apenas a variável e
 - criar tarefa para lead, cliente ou projeto;
 - definir responsável, prioridade e prazo;
 - concluir e cancelar tarefas;
+- conectar o Google Agenda;
+- confirmar que eventos do Google aparecem no Hub;
+- criar uma tarefa e confirmar criação do evento correspondente no Google Calendar;
 - validar visualização na agenda e em `/tarefas`.
 
 ### Financeiro
@@ -150,16 +186,17 @@ Observação: o script `lint` atual do projeto usa `next lint`. Se a versão ins
 
 ## Publicação na Vercel
 
-1. Faça push da branch `feat/lynk-hub` (já criada no repositório).
+1. Faça push da branch `feat/lynk-hub`.
 2. Gere um Preview Deployment da branch.
-3. Cadastre as variáveis Supabase e `NEXT_PUBLIC_APP_URL` no ambiente Preview.
-4. Execute a migration `005_lynk_hub.sql` no banco de teste/preview.
-5. Rode o checklist acima.
-6. Corrija qualquer erro de typecheck/build antes do merge.
-7. Faça merge do PR somente após a validação.
-8. Aplique a migration no Supabase de produção.
-9. Promova/deploy a `main` na Vercel.
-10. Faça smoke test de login, leads, clientes, propostas, projetos e financeiro em produção.
+3. Cadastre as variáveis Supabase, Google OAuth e `NEXT_PUBLIC_APP_URL` no ambiente Preview.
+4. Execute as migrations `005_lynk_hub.sql` e `006_google_calendar.sql` no banco de teste/preview.
+5. Configure o Google provider e as URLs de redirect no Supabase.
+6. Rode o checklist acima.
+7. Corrija qualquer erro de typecheck/build antes do merge.
+8. Faça merge do PR somente após a validação.
+9. Aplique as migrations no Supabase de produção.
+10. Promova/deploy a `main` na Vercel.
+11. Faça smoke test de login Google, Agenda, leads, clientes, propostas, projetos e financeiro em produção.
 
 ## Legado
 
