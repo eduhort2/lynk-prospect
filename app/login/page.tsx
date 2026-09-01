@@ -14,6 +14,12 @@ import { isStrongPassword, passwordError } from "@/lib/validations/password";
 
 type Mode = "login" | "signup" | "recover";
 
+function GoogleMark() {
+  return (
+    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[13px] font-bold text-[#4285F4]">G</span>
+  );
+}
+
 export default function LoginPage() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const router = useRouter();
@@ -25,6 +31,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -36,6 +43,30 @@ export default function LoginPage() {
     const error = searchParams.get("error");
     if (error) toast.error("Não foi possível concluir a autenticação", { description: error });
   }, [searchParams]);
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          scopes: "https://www.googleapis.com/auth/calendar.events",
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            include_granted_scopes: "true",
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setGoogleLoading(false);
+      toast.error("Não foi possível entrar com Google", {
+        description: error instanceof Error ? error.message : "Revise a configuração OAuth e tente novamente.",
+      });
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -95,13 +126,13 @@ export default function LoginPage() {
         <div className="max-w-xl">
           <p className="mb-5 text-xs font-semibold uppercase tracking-[.16em] text-primary">Gestão interna</p>
           <h1 className="text-balance text-5xl font-semibold leading-[1.08] tracking-[-.035em]">Toda a operação da LYNK em um só lugar.</h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">Leads, propostas, contratos, projetos, tarefas e financeiro conectados em uma única plataforma.</p>
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-zinc-500">Leads, propostas, contratos, projetos, tarefas, agenda e financeiro conectados em uma única plataforma.</p>
         </div>
 
         <div className="grid grid-cols-3 border-t border-line pt-8">
           <div><SearchCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Leads e propostas</p></div>
           <div><BarChart3 className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Operação e projetos</p></div>
-          <div><ShieldCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Gestão por empresa</p></div>
+          <div><ShieldCheck className="mb-3 h-4 w-4 text-primary" /><p className="text-xs text-zinc-400">Google Agenda integrado</p></div>
         </div>
       </section>
 
@@ -117,6 +148,16 @@ export default function LoginPage() {
               {mode === "recover" ? "Enviaremos um link seguro para o seu e-mail." : mode === "signup" ? "Crie o ambiente da sua empresa para começar." : "Acesse o ambiente da sua empresa."}
             </p>
           </div>
+
+          {mode !== "recover" ? (
+            <>
+              <Button type="button" variant="secondary" size="lg" className="w-full justify-center" onClick={handleGoogleSignIn} disabled={googleLoading || loading}>
+                <GoogleMark /> {googleLoading ? "Abrindo Google..." : "Continuar com Google"}
+              </Button>
+              <p className="mt-2 text-center text-[10px] leading-relaxed text-zinc-600">O Google solicitará permissão para sincronizar eventos da sua agenda com o LYNK Hub.</p>
+              <div className="my-6 flex items-center gap-3"><span className="h-px flex-1 bg-line" /><span className="text-[10px] uppercase tracking-[.16em] text-zinc-700">ou entre com e-mail</span><span className="h-px flex-1 bg-line" /></div>
+            </>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === "signup" ? (
@@ -150,7 +191,7 @@ export default function LoginPage() {
               </div>
             ) : null}
 
-            <Button type="submit" size="lg" className="w-full" disabled={loading || (mode === "signup" && !isStrongPassword(password))}>
+            <Button type="submit" size="lg" className="w-full" disabled={loading || googleLoading || (mode === "signup" && !isStrongPassword(password))}>
               {loading ? "Aguarde..." : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : "Enviar link"}
               {!loading ? <ArrowRight className="h-4 w-4" /> : null}
             </Button>
