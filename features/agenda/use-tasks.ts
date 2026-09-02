@@ -40,6 +40,8 @@ export function useCreateTask() {
         ...values,
         organization_id: organizationId,
         lead_id: values.lead_id || null,
+        client_id: values.client_id || null,
+        project_id: values.project_id || null,
         scheduled_at: new Date(values.scheduled_at).toISOString(),
       }).select().single();
       if (error) throw error;
@@ -55,7 +57,13 @@ export function useUpdateTask() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   return useMutation({
     mutationFn: async ({ id, values }: { id: string; values: Partial<TaskFormValues> & { status?: TaskStatus } }) => {
-      const payload = { ...values, ...(values.scheduled_at ? { scheduled_at: new Date(values.scheduled_at).toISOString() } : {}) };
+      const payload = {
+        ...values,
+        ...(values.scheduled_at ? { scheduled_at: new Date(values.scheduled_at).toISOString() } : {}),
+        ...(values.lead_id !== undefined ? { lead_id: values.lead_id || null } : {}),
+        ...(values.client_id !== undefined ? { client_id: values.client_id || null } : {}),
+        ...(values.project_id !== undefined ? { project_id: values.project_id || null } : {}),
+      };
       const { data, error } = await supabase.from("tasks").update(payload).eq("id", id).select().single();
       if (error) throw error;
       return data as Task;

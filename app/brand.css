@@ -1,0 +1,115 @@
+/* LYNK Hub — brand layer
+   Loaded after globals.css so the internal product follows the current
+   black / white / graphite identity consistently without rewriting the
+   structural styles of the application. */
+
+:root {
+  --lynk-black: #000000;
+  --lynk-ink: #050505;
+  --lynk-surface: #0b0b0b;
+  --lynk-surface-raised: #111111;
+  --lynk-surface-hover: #171717;
+  --lynk-line: #252525;
+  --lynk-line-strong: #343434;
+  --lynk-white: #ffffff;
+  --lynk-off-white: #f5f5f5;
+  --lynk-muted: #9b9b9b;
+  --lynk-muted-strong: #c7c7c7;
+
+  /* Override the legacy product tokens when Tailwind utilities resolve
+     through CSS variables. */
+  --primary: #f5f5f5;
+  --primary-light: #ffffff;
+  --muted: #9b9b9b;
+  --line: #252525;
+}
+
+html,
+body {
+  background: var(--lynk-black);
+  color: var(--lynk-off-white);
+}
+
+::selection {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Brand utilities generated from the previous blue/cyan design system. */
+.bg-primary {
+  background-color: var(--lynk-off-white) !important;
+  color: var(--lynk-black) !important;
+}
+
+.bg-primary:hover {
+  background-color: var(--lynk-white) !important;
+}
+
+[class*="bg-primary/"] {
+  background-color: rgb(255 255 255 / 0.075) !important;
+}
+
+.text-primary,
+.text-primary-light,
+[class*="text-primary"] {
+  color: var(--lynk-off-white) !important;
+}
+
+[class*="border-primary"] {
+  border-color: rgb(255 255 255 / 0.16) !important;
+}
+
+.border-line {
+  border-color: var(--lynk-line) !important;
+}
+
+.text-muted {
+  color: var(--lynk-muted) !important;
+}
+
+/* Remove residual cyan references from the old Prospect skin. */
+[class*="text-[#C3DFEA]"] {
+  color: var(--lynk-off-white) !important;
+}
+
+[class*="bg-[#C3DFEA]"] {
+  background-color: rgb(255 255 255 / 0.07) !important;
+}
+
+[class*="border-[#C3DFEA]"] {
+  border-color: rgb(255 255 255 / 0.16) !important;
+}
+
+/* Normalize the old greenish/blue-black surfaces into neutral graphite. */
+[class*="bg-[#070808]"],
+[class*="bg-[#090A0A]"],
+[class*="bg-[#0B0C0C]"],
+[class*="bg-[#0D0F0F]"],
+[class*="bg-[#0b0b0b]"] {
+  background-color: var(--lynk-ink) !important;
+}
+
+[class*="bg-[#121414]"],
+[class*="bg-[#151818]"] {
+  background-color: var(--lynk-surface-raised) !important;
+}
+
+/* Controls */
+input,
+textarea,
+select {
+  accent-color: #ffffff;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible,
+a:focus-visible {
+  outline-color: rgb(255 255 255 / 0.55) !important;
+}
+
+/* Premium neutral scrollbar */
+* {
+  scrollbar-color: #343434 #090909;
+}

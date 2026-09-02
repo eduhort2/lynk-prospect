@@ -1,7 +1,8 @@
 "use client";
 
-import { Copy, Download, ExternalLink, FileSpreadsheet, Filter, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Copy, Download, ExternalLink, FileSpreadsheet, Filter, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { LeadForm } from "@/components/forms/lead-form";
@@ -24,6 +25,7 @@ function normalize(value: string) {
 }
 
 export function LeadsPage() {
+  const searchParams = useSearchParams();
   const leadsQuery = useLeads();
   const membersQuery = useMembers();
   const createLead = useCreateLead();
@@ -31,9 +33,10 @@ export function LeadsPage() {
   const deleteLead = useDeleteLead();
   const importLeads = useImportLeads();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [status, setStatus] = useState<LeadStatus | "">("");
   const [priority, setPriority] = useState<Priority | "">("");
+  const [responsibleUser, setResponsibleUser] = useState("");
   const [editing, setEditing] = useState<Lead | null>(null);
   const [viewing, setViewing] = useState<Lead | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -45,9 +48,33 @@ export function LeadsPage() {
     const query = normalize(search);
     return (leadsQuery.data || []).filter((lead) => {
       const matchesText = !query || [lead.company_name, lead.contact_name, lead.email, lead.whatsapp, lead.segment, lead.city].some((value) => normalize(value || "").includes(query));
-      return matchesText && (!status || lead.status === status) && (!priority || lead.priority === priority);
+      return matchesText
+        && (!status || lead.status === status)
+        && (!priority || lead.priority === priority)
+        && (!responsibleUser || lead.responsible_user === responsibleUser);
     });
-  }, [leadsQuery.data, priority, search, status]);
+  }, [leadsQuery.data, priority, responsibleUser, search, status]);
+
+  const summary = useMemo(() => {
+    const leads = leadsQuery.data || [];
+    return [
+      { label: "Todos", value: leads.length, dot: "bg-primary" },
+      { label: "Novos", value: leads.filter((lead) => lead.status === "Novo").length, dot: "bg-slate-400" },
+      { label: "Em contato", value: leads.filter((lead) => ["Contato enviado", "Respondeu", "Reunião marcada"].includes(lead.status)).length, dot: "bg-sky-400" },
+      { label: "Propostas", value: leads.filter((lead) => ["Proposta enviada", "Negociação"].includes(lead.status)).length, dot: "bg-violet-400" },
+      { label: "Fechados", value: leads.filter((lead) => lead.status === "Fechado").length, dot: "bg-emerald-400" },
+      { label: "Perdidos", value: leads.filter((lead) => lead.status === "Perdido").length, dot: "bg-red-400" },
+    ];
+  }, [leadsQuery.data]);
+
+  const hasFilters = Boolean(search || status || priority || responsibleUser);
+
+  function clearFilters() {
+    setSearch("");
+    setStatus("");
+    setPriority("");
+    setResponsibleUser("");
+  }
 
   function openCreate() { setEditing(null); setFormOpen(true); }
   function openEdit(lead: Lead) { setEditing(lead); setFormOpen(true); }
@@ -189,15 +216,77 @@ export function LeadsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="CRM" title="Leads" description="Centralize contatos, contexto e progresso de cada oportunidade comercial." actions={<><Button variant="ghost" className="text-red-300" onClick={() => setClearOpen(true)} disabled={!leadsQuery.data?.length}><Trash2 className="h-4 w-4" /> Limpar leads</Button><Button variant="secondary" onClick={downloadModel}><Download className="h-4 w-4" /> Modelo</Button><Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={importLeads.isPending}><Upload className="h-4 w-4" /> {importLeads.isPending ? "Importando..." : "Importar Excel"}</Button><Button onClick={openCreate}><Plus className="h-4 w-4" /> Novo lead</Button><input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(event) => handleImport(event.target.files?.[0])} /></>}/>
+      <PageHeader
+        eyebrow="CRM"
+        title="Leads"
+        description="Centralize contatos, contexto e progresso de cada oportunidade comercial."
+        actions={
+          <>
+            <Button variant="ghost" className="hidden text-red-300 lg:inline-flex" onClick={() => setClearOpen(true)} disabled={!leadsQuery.data?.length}><Trash2 className="h-4 w-4" /> Limpar leads</Button>
+            <Button variant="secondary" className="hidden xl:inline-flex" onClick={downloadModel}><Download className="h-4 w-4" /> Modelo</Button>
+            <Button variant="secondary" className="hidden sm:inline-flex" onClick={() => fileRef.current?.click()} disabled={importLeads.isPending}><Upload className="h-4 w-4" /> {importLeads.isPending ? "Importando..." : "Importar Excel"}</Button>
+            <Button onClick={openCreate}><Plus className="h-4 w-4" /> Novo lead</Button>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(event) => handleImport(event.target.files?.[0])} />
+          </>
+        }
+      />
 
-      <Card>
-        <div className="flex flex-col gap-3 border-b border-line p-4 sm:flex-row">
-          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar empresa, contato, cidade..." className="pl-10" /></div>
-          <div className="flex gap-2"><div className="relative min-w-44"><Filter className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-600" /><Select className="pl-9" value={status} onChange={(event) => setStatus(event.target.value as LeadStatus | "")}><option value="">Todos os status</option>{LEAD_STATUSES.map((item) => <option key={item}>{item}</option>)}</Select></div><Select className="min-w-36" value={priority} onChange={(event) => setPriority(event.target.value as Priority | "")}><option value="">Prioridade</option><option>Alta</option><option>Média</option><option>Baixa</option></Select></div>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto border-b border-line/80">
+          <div className="grid min-w-[720px] grid-cols-6 divide-x divide-line/70">
+            {summary.map((item) => (
+              <div key={item.label} className="px-4 py-4 sm:px-5">
+                <div className="flex items-center gap-2">
+                  <span className={`h-1.5 w-1.5 rounded-full ${item.dot}`} />
+                  <p className="text-[10px] uppercase tracking-[.12em] text-zinc-600">{item.label}</p>
+                </div>
+                <p className="mt-2 text-xl font-semibold tracking-tight text-white">{item.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        {leadsQuery.isLoading ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <LeadsTable leads={filtered} onView={setViewing} onContact={contactLead} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} onWhatsAppApi={(lead) => sendViaApi(lead, "whatsapp")} onEmail={(lead) => sendViaApi(lead, "email")} />}
-        {!leadsQuery.isLoading && leadsQuery.data?.length ? <div className="border-t border-line px-5 py-3 text-xs text-zinc-600">Mostrando {filtered.length} de {leadsQuery.data.length} leads</div> : null}
+
+        <div className="border-b border-line p-3 sm:p-4">
+          <div className="grid gap-2 lg:grid-cols-[minmax(260px,1fr)_180px_180px_170px_auto]">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar empresa, contato, cidade, e-mail ou telefone..." className="h-10 pl-10" />
+            </div>
+            <div className="relative">
+              <Filter className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-600" />
+              <Select className="h-10 pl-9" value={status} onChange={(event) => setStatus(event.target.value as LeadStatus | "")}>
+                <option value="">Todos os status</option>
+                {LEAD_STATUSES.map((item) => <option key={item}>{item}</option>)}
+              </Select>
+            </div>
+            <Select className="h-10" value={responsibleUser} onChange={(event) => setResponsibleUser(event.target.value)}>
+              <option value="">Todos responsáveis</option>
+              {(membersQuery.data || []).map((member) => <option key={member.user_id} value={member.user_id}>{member.profile?.name || member.user_id}</option>)}
+            </Select>
+            <Select className="h-10" value={priority} onChange={(event) => setPriority(event.target.value as Priority | "")}>
+              <option value="">Todas prioridades</option>
+              <option>Alta</option>
+              <option>Média</option>
+              <option>Baixa</option>
+            </Select>
+            {hasFilters ? <Button variant="ghost" className="h-10 justify-center px-3 text-zinc-400" onClick={clearFilters}><X className="h-4 w-4" /> Limpar</Button> : <div className="hidden lg:block" />}
+          </div>
+        </div>
+
+        {leadsQuery.isLoading ? (
+          <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div>
+        ) : leadsQuery.isError ? (
+          <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div>
+        ) : (
+          <LeadsTable leads={filtered} onView={setViewing} onContact={contactLead} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} onWhatsAppApi={(lead) => sendViaApi(lead, "whatsapp")} onEmail={(lead) => sendViaApi(lead, "email")} />
+        )}
+
+        {!leadsQuery.isLoading && leadsQuery.data?.length ? (
+          <div className="flex flex-col gap-2 border-t border-line px-4 py-3 text-[11px] text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <span>Mostrando {filtered.length} de {leadsQuery.data.length} leads</span>
+            <span className="text-zinc-700">Use a busca e os filtros para encontrar oportunidades mais rápido.</span>
+          </div>
+        ) : null}
       </Card>
 
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} title={editing ? "Editar lead" : "Novo lead"} description="Preencha os dados confirmados da oportunidade." size="xl"><LeadForm key={editing?.id || "new"} lead={editing} members={membersQuery.data || []} onSubmit={submit} onCancel={() => setFormOpen(false)} loading={createLead.isPending || updateLead.isPending} /></Dialog>
@@ -208,10 +297,10 @@ export function LeadsPage() {
             ["Localização", [viewing.neighborhood, viewing.city, viewing.state].filter(Boolean).join(" · ") || "Não informada"],
             ["Melhor dia", viewing.best_contact_day || "Não informado"],
             ["Melhor horário", viewing.best_contact_time || "Não informado"],
-          ].map(([label, value]) => <div key={label} className="rounded-xl border border-line bg-[#090909] p-3"><p className="text-[10px] uppercase tracking-wider text-zinc-600">{label}</p><p className="mt-2 text-sm text-zinc-200">{value}</p></div>)}</div>
-          <div className="grid gap-4 lg:grid-cols-2"><div className="rounded-xl border border-line bg-[#090909] p-4"><p className="text-xs font-medium text-zinc-300">Diferenciais observados</p><p className="mt-2 text-sm leading-relaxed text-zinc-500">{viewing.differentiators || "Não informado"}</p></div><div className="rounded-xl border border-line bg-[#090909] p-4"><p className="text-xs font-medium text-zinc-300">Oportunidade da landing page</p><p className="mt-2 text-sm leading-relaxed text-zinc-500">{viewing.landing_page_opportunity || "Não informada"}</p></div></div>
-          <div><div className="mb-2 flex items-center justify-between"><p className="text-xs font-medium text-zinc-300">Mensagem personalizada</p><Button variant="ghost" size="sm" onClick={async () => { await navigator.clipboard.writeText(viewing.message || ""); toast.success("Mensagem copiada"); }} disabled={!viewing.message}><Copy className="h-3.5 w-3.5" /> Copiar</Button></div><div className="rounded-xl border border-line bg-[#090909] p-4 text-sm leading-relaxed text-zinc-400">{viewing.message || "Mensagem não informada"}</div></div>
-          <div className="grid gap-4 lg:grid-cols-2"><div className="rounded-xl border border-line bg-[#090909] p-4"><p className="text-xs font-medium text-zinc-300">Situação do site</p><p className="mt-2 text-sm text-zinc-500">{viewing.website_status || "Não informada"}</p></div><div className="rounded-xl border border-line bg-[#090909] p-4"><p className="text-xs font-medium text-zinc-300">Motivo do horário</p><p className="mt-2 text-sm text-zinc-500">{viewing.contact_time_reason || "Não informado"}</p></div></div>
+          ].map(([label, value]) => <div key={label} className="rounded-xl border border-line bg-card p-3"><p className="text-[10px] uppercase tracking-wider text-zinc-600">{label}</p><p className="mt-2 text-sm text-zinc-200">{value}</p></div>)}</div>
+          <div className="grid gap-4 lg:grid-cols-2"><div className="rounded-xl border border-line bg-card p-4"><p className="text-xs font-medium text-zinc-300">Diferenciais observados</p><p className="mt-2 text-sm leading-relaxed text-zinc-500">{viewing.differentiators || "Não informado"}</p></div><div className="rounded-xl border border-line bg-card p-4"><p className="text-xs font-medium text-zinc-300">Oportunidade da landing page</p><p className="mt-2 text-sm leading-relaxed text-zinc-500">{viewing.landing_page_opportunity || "Não informada"}</p></div></div>
+          <div><div className="mb-2 flex items-center justify-between"><p className="text-xs font-medium text-zinc-300">Mensagem personalizada</p><Button variant="ghost" size="sm" onClick={async () => { await navigator.clipboard.writeText(viewing.message || ""); toast.success("Mensagem copiada"); }} disabled={!viewing.message}><Copy className="h-3.5 w-3.5" /> Copiar</Button></div><div className="rounded-xl border border-line bg-card p-4 text-sm leading-relaxed text-zinc-400">{viewing.message || "Mensagem não informada"}</div></div>
+          <div className="grid gap-4 lg:grid-cols-2"><div className="rounded-xl border border-line bg-card p-4"><p className="text-xs font-medium text-zinc-300">Situação do site</p><p className="mt-2 text-sm text-zinc-500">{viewing.website_status || "Não informada"}</p></div><div className="rounded-xl border border-line bg-card p-4"><p className="text-xs font-medium text-zinc-300">Motivo do horário</p><p className="mt-2 text-sm text-zinc-500">{viewing.contact_time_reason || "Não informado"}</p></div></div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5"><p className="text-xs text-zinc-600">Importado em {formatDate(viewing.created_at, true)}{viewing.offered_value ? ` · Oferta: ${viewing.offered_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` : ""}</p><div className="flex gap-2">{viewing.public_source ? <Button variant="secondary" onClick={() => window.open(viewing.public_source!, "_blank", "noopener,noreferrer")}><ExternalLink className="h-4 w-4" /> Abrir fonte</Button> : null}{getContactUrl(viewing) ? <Button onClick={() => contactLead(viewing)}><ExternalLink className="h-4 w-4" /> Abrir e marcar envio</Button> : null}</div></div>
         </div> : null}
       </Dialog>

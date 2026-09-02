@@ -4,9 +4,9 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "LYNK Prospect", template: "%s | LYNK Prospect" },
-  description: "CRM e gestão de landing pages da LYNK.",
-  applicationName: "LYNK Prospect",
+  title: { default: "LYNK Hub", template: "%s | LYNK Hub" },
+  description: "Sistema interno de gestão comercial, operacional e financeira da LYNK.",
+  applicationName: "LYNK Hub",
 };
 
 export const viewport: Viewport = {

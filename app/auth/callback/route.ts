@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { persistGoogleCalendarConnection } from "@/lib/google/calendar";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -9,8 +10,24 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createServerSupabase();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL(next, url.origin));
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error) {
+      if (data.session?.provider_token && data.session.user) {
+        try {
+          await persistGoogleCalendarConnection({
+            userId: data.session.user.id,
+            email: data.session.user.email,
+            accessToken: data.session.provider_token,
+            refreshToken: data.session.provider_refresh_token,
+          });
+        } catch (calendarError) {
+          console.error("Google Calendar connection was not persisted", calendarError);
+        }
+      }
+      return NextResponse.redirect(new URL(next, url.origin));
+    }
+
     return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin));
   }
 
