@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { useMembers } from "@/features/auth/use-members";
 import { useOrganization } from "@/features/auth/organization-provider";
-import { useLeads } from "@/features/leads/use-leads";
+import { useLeadNames } from "@/features/leads/use-lead-pages";
 import { cn } from "@/lib/utils";
 import type { TaskFormValues } from "@/lib/validations/task";
 import type { Task } from "@/types";
@@ -41,7 +41,7 @@ function TaskChip({ task, onComplete, onCancel, onDelete }: { task: Task; onComp
 export function AgendaPage() {
   const { userId } = useOrganization();
   const tasksQuery = useTasks();
-  const leadsQuery = useLeads();
+  const leadsQuery = useLeadNames();
   const membersQuery = useMembers();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -89,7 +89,7 @@ export function AgendaPage() {
   return (
     <>
       <PageHeader eyebrow="Retornos" title="Agenda" description="Retornos atrasados, de hoje e próximos. Clique na empresa para abrir a ficha." actions={<Button variant="secondary" onClick={() => openAt(cursor)}><Plus className="h-4 w-4" /> Nova tarefa</Button>} />
-      {tasksQuery.isLoading ? null : <FollowUpList tasks={tasks} leads={leadsQuery.data || []} />}
+      {tasksQuery.isPending ? <div className="mb-6 flex min-h-32 items-center justify-center rounded-xl border border-line text-sm text-muted">Carregando retornos...</div> : <FollowUpList tasks={tasks} />}
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-[.16em] text-zinc-500">Calendário</h2>
       <Card className="overflow-hidden">
         <div className="flex flex-col justify-between gap-3 border-b border-line p-4 sm:flex-row sm:items-center">
@@ -97,7 +97,7 @@ export function AgendaPage() {
           <div className="flex rounded-xl border border-line bg-[#090909] p-1">{(["month", "week", "day"] as View[]).map((item) => <button key={item} onClick={() => setView(item)} className={cn("rounded-lg px-3 py-1.5 text-xs transition", view === item ? "bg-white/[.08] text-white" : "text-zinc-600 hover:text-zinc-300")}>{item === "month" ? "Mês" : item === "week" ? "Semana" : "Dia"}</button>)}</div>
         </div>
 
-        {tasksQuery.isLoading ? <div className="flex min-h-[460px] items-center justify-center text-sm text-muted">Carregando agenda...</div> : view === "month" ? (
+        {tasksQuery.isPending ? <div className="flex min-h-[460px] items-center justify-center text-sm text-muted">Carregando agenda...</div> : view === "month" ? (
           <div><div className="grid grid-cols-7 border-b border-line bg-[#080808]">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => <div key={day} className="p-2 text-center text-[10px] uppercase tracking-wider text-zinc-600">{day}</div>)}</div><div className="grid grid-cols-7">{monthDays.map((day) => { const dayTasks = tasksFor(day); return <button key={day.toISOString()} onDoubleClick={() => openAt(day)} onClick={() => { setCursor(day); if (window.innerWidth < 640) setView("day"); }} className={cn("min-h-28 border-b border-r border-line p-2 text-left align-top transition hover:bg-white/[.015]", !isSameMonth(day, cursor) && "bg-black/20 opacity-35")}><span className={cn("flex h-6 w-6 items-center justify-center rounded-lg text-xs text-zinc-500", isSameDay(day, new Date()) && "bg-primary text-white")}>{format(day, "d")}</span><div className="mt-1 space-y-1">{dayTasks.slice(0, 3).map((task) => <div key={task.id} className={cn("truncate rounded-md border-l-2 bg-white/[.035] px-1.5 py-1 text-[9px] text-zinc-400", task.status === "concluído" ? "border-emerald-400 opacity-55" : task.status === "cancelado" ? "border-red-400 opacity-55" : "border-primary")}>{format(new Date(task.scheduled_at), "HH:mm")} {task.title}</div>)}{dayTasks.length > 3 ? <p className="pl-1 text-[9px] text-zinc-600">+{dayTasks.length - 3} tarefas</p> : null}</div></button>; })}</div></div>
         ) : view === "week" ? (
           <div className="grid min-h-[500px] grid-cols-1 divide-y divide-line sm:grid-cols-7 sm:divide-x sm:divide-y-0">{weekDays.map((day) => <div key={day.toISOString()} className="min-w-0 p-3"><button onClick={() => { setCursor(day); setView("day"); }} className="mb-3 w-full text-center"><span className="text-[10px] uppercase text-zinc-600">{format(day, "EEE", { locale: ptBR })}</span><span className={cn("mx-auto mt-1 flex h-8 w-8 items-center justify-center rounded-xl text-sm", isSameDay(day, new Date()) ? "bg-primary text-white" : "text-zinc-300")}>{format(day, "d")}</span></button><div className="space-y-2">{tasksFor(day).map((task) => <TaskChip key={task.id} task={task} {...taskActions(task)} />)}<Button variant="ghost" size="sm" className="w-full text-zinc-600" onClick={() => openAt(day)}><Plus className="h-3 w-3" /> Adicionar</Button></div></div>)}</div>

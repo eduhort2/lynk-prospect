@@ -16,7 +16,7 @@ import { followUpBucket, useScheduleFollowUp } from "./follow-ups";
 import { StageOptions } from "./stage-options";
 import { stageInfo, stageLabel, stageOf } from "./stages";
 import { useUpdateLead } from "./use-leads";
-import { getOtherContactLink, getWhatsAppTarget } from "./whatsapp-link";
+import { getOtherContactLink, getProbableWhatsApp, getWhatsAppTarget } from "./whatsapp-link";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Tente novamente.";
@@ -65,6 +65,7 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
 
   // O link é gerado com o texto que está na tela agora, inclusive se acabou de ser editado.
   const whatsapp = getWhatsAppTarget(lead, message);
+  const probable = getProbableWhatsApp(lead, message);
   const otherLink = getOtherContactLink(lead);
   const messageDirty = message.trim() !== (lead.message || "").trim();
   const notesDirty = notes.trim() !== (lead.observations || "").trim();
@@ -84,11 +85,19 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
     } catch (error) { toast.error("Não foi possível salvar as notas", { description: errorMessage(error) }); }
   }
 
-  async function openWhatsApp() {
-    if (!whatsapp) return;
+  async function confirmWhatsApp() {
+    if (!probable) return;
+    try {
+      await updateLead.mutateAsync({ id: lead.id, values: { whatsapp: lead.whatsapp || lead.phone || probable.number, whatsapp_confirmed: true } });
+      toast.success("WhatsApp marcado como confirmado");
+    } catch (error) { toast.error("Não foi possível confirmar", { description: errorMessage(error) }); }
+  }
+
+  async function openWhatsApp(target: { url: string; messageIncluded?: boolean } | null = whatsapp) {
+    if (!target) return;
     // Abre primeiro (no mesmo clique) para não ser bloqueado como pop-up. A etapa não muda.
-    window.open(whatsapp.url, "_blank", "noopener,noreferrer");
-    if (!whatsapp.messageIncluded && message.trim()) {
+    window.open(target.url, "_blank", "noopener,noreferrer");
+    if (target.messageIncluded === false && message.trim()) {
       try { await navigator.clipboard.writeText(message); } catch { /* sem permissão de cópia */ }
       toast.info("Este link não aceita texto automático. A mensagem foi copiada para colar na conversa.");
     } else {
@@ -149,12 +158,18 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
           {lead.contacted_at ? <span className="text-xs text-zinc-500">Último contato: {formatDate(lead.contacted_at, true)}</span> : <span className="text-xs text-zinc-600">Sem contato registrado</span>}
         </div>
         <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex">
-          {whatsapp ? <Button onClick={openWhatsApp} className="col-span-2 whitespace-nowrap sm:col-auto"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp</Button> : null}
+          {whatsapp ? <Button onClick={() => openWhatsApp()} className="col-span-2 whitespace-nowrap sm:col-auto"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp</Button> : null}
+          {probable ? <Button variant="outline" onClick={() => openWhatsApp({ url: probable.url })} className="col-span-2 whitespace-nowrap sm:col-auto" title="Celular sem confirmação de WhatsApp"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp (a confirmar)</Button> : null}
           <Button variant="secondary" onClick={markContacted} disabled={updateLead.isPending} className="whitespace-nowrap px-3"><CheckCheck className="h-4 w-4" /> Marcar como contatado</Button>
           <Button variant="ghost" onClick={onEdit} aria-label="Editar dados"><Pencil className="h-4 w-4" /> <span className="hidden sm:inline">Editar</span></Button>
         </div>
       </div>
-      {!whatsapp ? <p className="-mt-2 text-xs text-zinc-600">Sem WhatsApp confirmado nem link oficial de WhatsApp. {lead.phone ? "O telefone cadastrado é tratado como telefone comum." : ""}</p> : null}
+      {probable ? (
+        <p className="-mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-300/90">
+          WhatsApp a confirmar{lead.whatsapp_source ? ` · origem: ${lead.whatsapp_source.replace(/\s*\(.*\)\s*$/, "").toLowerCase()}` : ""}.
+          <button type="button" onClick={confirmWhatsApp} disabled={updateLead.isPending} className="text-primary-light underline-offset-2 hover:underline">Marcar como WhatsApp confirmado</button>
+        </p>
+      ) : !whatsapp ? <p className="-mt-2 text-xs text-zinc-600">Sem WhatsApp confirmado nem link oficial de WhatsApp. {lead.phone ? "O telefone cadastrado é fixo ou não é celular." : ""}</p> : null}
 
       {/* Empresa e canais */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
@@ -171,7 +186,13 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
             : "Não confirmado"}
         </Info>
         <Info label="Link oficial de contato">{lead.contact_link ? <a className="inline-flex items-center gap-1.5 hover:text-white" href={withProtocol(lead.contact_link)} target="_blank" rel="noreferrer"><Link2 className="h-3.5 w-3.5 text-zinc-500" /><span className="truncate">{lead.contact_link.replace(/^https?:\/\//, "")}</span></a> : "Não informado"}</Info>
-        <Info label="Serviço sugerido">{lead.suggested_service || "Não definido"}</Info>
+        <Info label="Serviço sugerido">{lead.suggested_service ? `${lead.suggested_service}${lead.suggested_service_detail ? ` — ${lead.suggested_service_detail}` : ""}` : "Não definido"}</Info>
+        {lead.marketplace_url ? (
+          <>
+            <Info label="Loja no Mercado Livre"><a className="inline-flex items-center gap-1.5 hover:text-white" href={withProtocol(lead.marketplace_url)} target="_blank" rel="noreferrer"><ExternalLink className="h-3.5 w-3.5 text-zinc-500" /><span className="truncate">{lead.marketplace_url.replace(/^https?:\/\/(www\.)?/, "").slice(0, 48)}</span></a>{lead.marketplace_presence ? <span className={`mt-1 block text-[11px] ${lead.marketplace_presence === "confirmada" ? "text-emerald-300" : "text-amber-300"}`}>Presença {lead.marketplace_presence === "confirmada" ? "confirmada" : "a validar"}</span> : null}</Info>
+            <Info label="Anúncios no ML">{lead.marketplace_listings != null ? lead.marketplace_listings.toLocaleString("pt-BR") : "A conferir"}</Info>
+          </>
+        ) : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

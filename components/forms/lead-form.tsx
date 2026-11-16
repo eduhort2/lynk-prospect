@@ -25,6 +25,9 @@ const defaultValues: LeadFormValues = {
   whatsapp_confirmed: false,
   contact_link: "",
   suggested_service: "",
+  suggested_service_detail: "",
+  marketplace_url: "",
+  marketplace_listings: "",
   differentiators: "",
   landing_page_opportunity: "",
   public_source: "",
@@ -66,6 +69,9 @@ export function LeadForm({
     whatsapp_confirmed: Boolean(lead.whatsapp_confirmed),
     contact_link: lead.contact_link || "",
     suggested_service: lead.suggested_service || "",
+    suggested_service_detail: lead.suggested_service_detail || "",
+    marketplace_url: lead.marketplace_url || "",
+    marketplace_listings: lead.marketplace_listings != null ? String(lead.marketplace_listings) : "",
     differentiators: lead.differentiators || "",
     landing_page_opportunity: lead.landing_page_opportunity || "",
     public_source: lead.public_source || "",
@@ -80,6 +86,7 @@ export function LeadForm({
   });
   const whatsapp = watch("whatsapp");
   const confirmed = watch("whatsapp_confirmed");
+  const service = watch("suggested_service");
   // Sem número, não existe WhatsApp confirmado.
   const submit = (data: LeadFormValues) => onSubmit({ ...data, whatsapp_confirmed: Boolean(data.whatsapp?.trim()) && data.whatsapp_confirmed });
 
@@ -130,6 +137,13 @@ export function LeadForm({
           <div><Label htmlFor="suggested_service">Serviço sugerido</Label><Select id="suggested_service" {...register("suggested_service")}><option value="">Não definido</option>{SUGGESTED_SERVICES.map((item) => <option key={item}>{item}</option>)}</Select></div>
           <div><Label htmlFor="status">Etapa</Label><Select id="status" {...register("status")}><StageOptions current={lead?.status} /></Select></div>
         </div>
+        {service === "Outro" || service === "Loja no Mercado Livre" ? field("suggested_service_detail", service === "Outro" ? "Qual serviço?" : "O que oferecer para a loja", service === "Outro" ? "Ex.: automação de agendamento" : "Ex.: site próprio, gestão de anúncios") : null}
+        {service === "Loja no Mercado Livre" || lead?.marketplace_url ? (
+          <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
+            {field("marketplace_url", "Link da loja no Mercado Livre", "https://www.mercadolivre.com.br/loja/...")}
+            {field("marketplace_listings", "Anúncios", "Ex.: 350")}
+          </div>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <div><Label htmlFor="differentiators">Sinal observado</Label><Textarea id="differentiators" className="min-h-20" placeholder="Ex.: pedidos só por telefone, sem site, estoque em planilha..." {...register("differentiators")} /></div>
           <div><Label htmlFor="landing_page_opportunity">Oportunidade comercial</Label><Textarea id="landing_page_opportunity" className="min-h-20" placeholder="O que o serviço resolveria para a empresa" {...register("landing_page_opportunity")} /></div>
@@ -139,7 +153,7 @@ export function LeadForm({
         <div><Label htmlFor="observations">Notas de acompanhamento</Label><Textarea id="observations" className="min-h-20" placeholder="Histórico, objeções, próximos passos..." {...register("observations")} /></div>
       </Section>
 
-      <div className="sticky bottom-0 -mx-5 -mb-5 flex justify-end gap-2 border-t border-line bg-[#0b0b0b]/95 p-4 backdrop-blur">
+      <div className="sticky bottom-0 -mx-4 -mb-4 flex justify-end gap-2 border-t border-line bg-[#0b0b0b]/95 p-4 backdrop-blur sm:-mx-5 sm:-mb-5">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" disabled={loading}>{loading ? "Salvando..." : lead ? "Salvar alterações" : "Criar lead"}</Button>
       </div>

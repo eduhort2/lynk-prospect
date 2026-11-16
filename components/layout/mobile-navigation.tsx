@@ -8,7 +8,7 @@ import { isActivePath, MAIN_NAVIGATION } from "./navigation";
 export function MobileNavigation() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line bg-[#080808]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden" aria-label="Navegação principal">
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-[#080808]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden" aria-label="Navegação principal">
       {MAIN_NAVIGATION.map((item) => {
         const Icon = item.icon;
         const active = isActivePath(pathname, item.href);

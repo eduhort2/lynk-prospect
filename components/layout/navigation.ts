@@ -1,4 +1,4 @@
-import { CalendarDays, ContactRound, ListFilter } from "lucide-react";
+import { CalendarDays, ContactRound, ListFilter, SearchCheck } from "lucide-react";
 
 /**
  * Navegação da versão enxuta. Dashboard, Clientes, Projetos, Prompts,
@@ -9,6 +9,7 @@ import { CalendarDays, ContactRound, ListFilter } from "lucide-react";
  */
 export const MAIN_NAVIGATION = [
   { href: "/leads", label: "Leads", icon: ContactRound },
+  { href: "/buscar", label: "Buscar", icon: SearchCheck },
   { href: "/pipeline", label: "Pipeline", icon: ListFilter },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
 ];

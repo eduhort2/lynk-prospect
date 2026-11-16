@@ -13,10 +13,13 @@ import { hasWhatsApp } from "@/features/leads/whatsapp-link";
 import { cn, formatDate } from "@/lib/utils";
 import type { Lead, LeadStatus, Task } from "@/types";
 
+export type PipelineColumnData = { rows: Lead[]; total: number; loading: boolean };
+
 type BoardProps = {
-  leads: Lead[];
+  columns: Record<StageStatus, PipelineColumnData>;
   followUps: Map<string, Task>;
   onStatusChange: (lead: Lead, status: LeadStatus) => Promise<void>;
+  onLoadMore: (stage: StageStatus) => void;
 };
 
 function LeadCard({ lead, followUp, onStatusChange, overlay = false }: { lead: Lead; followUp?: Task; onStatusChange?: BoardProps["onStatusChange"]; overlay?: boolean }) {
@@ -58,20 +61,22 @@ function LeadCard({ lead, followUp, onStatusChange, overlay = false }: { lead: L
   );
 }
 
-function Column({ status, label, accent, leads, followUps, onStatusChange }: { status: StageStatus; label: string; accent: string; leads: Lead[] } & Omit<BoardProps, "leads">) {
+function Column({ status, label, accent, data, followUps, onStatusChange, onLoadMore }: { status: StageStatus; label: string; accent: string; data: PipelineColumnData } & Omit<BoardProps, "columns">) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const remaining = data.total - data.rows.length;
   return (
     <section ref={setNodeRef} className={cn("flex w-[min(18rem,82vw)] shrink-0 snap-start flex-col rounded-2xl border border-line bg-[#090909]/80 transition", isOver && "border-primary/45 bg-primary/[.04]")}>
-      <header className="flex items-center gap-2 border-b border-line p-3.5"><span className={cn("h-2 w-2 rounded-full", accent)} /><h3 className="text-xs font-medium text-zinc-300">{label}</h3><span className="ml-auto rounded-full bg-white/[.05] px-2 py-0.5 text-[10px] text-zinc-500">{leads.length}</span></header>
+      <header className="flex items-center gap-2 border-b border-line p-3.5"><span className={cn("h-2 w-2 rounded-full", accent)} /><h3 className="text-xs font-medium text-zinc-300">{label}</h3><span className="ml-auto rounded-full bg-white/[.05] px-2 py-0.5 text-[10px] text-zinc-500">{data.total}</span></header>
       <div className="min-h-32 flex-1 space-y-2.5 p-2.5">
-        {leads.map((lead) => <LeadCard key={lead.id} lead={lead} followUp={followUps.get(lead.id)} onStatusChange={onStatusChange} />)}
-        {!leads.length ? <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-line text-[11px] text-zinc-700">Arraste um lead para cá</div> : null}
+        {data.rows.map((lead) => <LeadCard key={lead.id} lead={lead} followUp={followUps.get(lead.id)} onStatusChange={onStatusChange} />)}
+        {!data.rows.length ? <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-line text-[11px] text-zinc-700">{data.loading ? "Carregando..." : "Arraste um lead para cá"}</div> : null}
+        {remaining > 0 ? <button type="button" onClick={() => onLoadMore(status)} disabled={data.loading} className="w-full rounded-lg border border-dashed border-line py-2 text-[11px] text-zinc-500 transition hover:border-primary/30 hover:text-zinc-200 disabled:opacity-50">{data.loading ? "Carregando..." : `Mostrar mais (${remaining} restantes)`}</button> : null}
       </div>
     </section>
   );
 }
 
-export function PipelineBoard({ leads, followUps, onStatusChange }: BoardProps) {
+export function PipelineBoard({ columns, followUps, onStatusChange, onLoadMore }: BoardProps) {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -91,7 +96,7 @@ export function PipelineBoard({ leads, followUps, onStatusChange }: BoardProps) 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveLead(null)}>
       <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">
-        {PIPELINE_STAGES.map((stage) => <Column key={stage.status} status={stage.status} label={stage.label} accent={stage.accent} leads={leads.filter((lead) => stageOf(lead.status) === stage.status)} followUps={followUps} onStatusChange={onStatusChange} />)}
+        {PIPELINE_STAGES.map((stage) => <Column key={stage.status} status={stage.status} label={stage.label} accent={stage.accent} data={columns[stage.status]} followUps={followUps} onStatusChange={onStatusChange} onLoadMore={onLoadMore} />)}
       </div>
       <DragOverlay>{activeLead ? <LeadCard lead={activeLead} followUp={followUps.get(activeLead.id)} overlay /> : null}</DragOverlay>
     </DndContext>

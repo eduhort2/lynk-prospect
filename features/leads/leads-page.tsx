@@ -2,7 +2,7 @@
 
 import { Download, FileSpreadsheet, Plus, Search, Trash2, Upload } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { LeadForm } from "@/components/forms/lead-form";
@@ -12,19 +12,17 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import type { LeadFormValues } from "@/lib/validations/lead";
 import { SUGGESTED_SERVICES, type Lead } from "@/types";
 import { useFollowUps } from "./follow-ups";
 import { parseProspectingWorkbook } from "./importer";
 import { LeadDetail } from "./lead-detail";
-import { PIPELINE_STAGES, stageOf, type StageStatus } from "./stages";
-import { useCreateLead, useDeleteLead, useImportLeads, useLeads, useUpdateLead } from "./use-leads";
+import { PIPELINE_STAGES, type StageStatus } from "./stages";
+import { useCreateLead, useDeleteLead, useImportLeads, useUpdateLead } from "./use-leads";
+import { useLead, useLeadCount, useLeadsPage, usePageSize } from "./use-lead-pages";
 import { getWhatsAppTarget } from "./whatsapp-link";
-
-function normalize(value: string) {
-  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
-}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Tente novamente.";
@@ -34,7 +32,6 @@ export function LeadsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const leadsQuery = useLeads();
   const followUps = useFollowUps();
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
@@ -49,23 +46,36 @@ export function LeadsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize();
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Busca no servidor com pequeno atraso para não consultar a cada tecla.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+  // Mudou filtro ou tamanho de página: volta para a primeira página.
+  useEffect(() => { setPage(1); }, [debouncedSearch, stage, service, pageSize]);
+
+  const leadsQuery = useLeadsPage({ search: debouncedSearch, stage, service, page, pageSize });
+  const countQuery = useLeadCount();
+  const rows = leadsQuery.data?.rows || [];
+  const filteredTotal = leadsQuery.data?.total ?? 0;
+  const total = countQuery.data ?? 0;
+
+  // Se a página atual ficou vazia (ex.: após excluir), volta uma página.
+  useEffect(() => {
+    if (!leadsQuery.isFetching && page > 1 && filteredTotal > 0 && rows.length === 0) setPage(Math.ceil(filteredTotal / pageSize));
+  }, [filteredTotal, leadsQuery.isFetching, page, pageSize, rows.length]);
 
   // A ficha aberta fica na URL (?lead=id) para a Agenda e o Pipeline abrirem direto.
   const viewingId = searchParams.get("lead");
-  const viewing = viewingId ? (leadsQuery.data || []).find((lead) => lead.id === viewingId) || null : null;
+  const viewingQuery = useLead(viewingId);
+  const viewing = viewingQuery.data || null;
 
   function openLead(lead: Lead) { router.push(`${pathname}?lead=${lead.id}`, { scroll: false }); }
   function closeLead() { router.replace(pathname, { scroll: false }); }
-
-  const filtered = useMemo(() => {
-    const query = normalize(search);
-    return (leadsQuery.data || []).filter((lead) => {
-      const matchesText = !query || [lead.company_name, lead.city, lead.contact_name, lead.email, lead.phone, lead.whatsapp].some((value) => normalize(value || "").includes(query));
-      const matchesStage = !stage || stageOf(lead.status) === stage;
-      const matchesService = !service || (service === "none" ? !lead.suggested_service : lead.suggested_service === service);
-      return matchesText && matchesStage && matchesService;
-    });
-  }, [leadsQuery.data, search, stage, service]);
 
   function openCreate() { setEditing(null); setFormOpen(true); }
   function openEdit(lead: Lead) { setEditing(lead); setFormOpen(true); }
@@ -113,7 +123,8 @@ export function LeadsPage() {
       const response = await fetch("/api/leads/clear", { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível limpar os leads");
-      await leadsQuery.refetch();
+      setPage(1);
+      await Promise.all([leadsQuery.refetch(), countQuery.refetch()]);
       setClearOpen(false);
       toast.success(`${data.deleted} leads removidos`);
     } catch (error) {
@@ -163,8 +174,6 @@ export function LeadsPage() {
     XLSX.writeFile(workbook, "modelo-leads-lynk.xlsx");
   }
 
-  const total = leadsQuery.data?.length || 0;
-
   return (
     <>
       <PageHeader
@@ -186,8 +195,9 @@ export function LeadsPage() {
             <Select className="md:min-w-44" value={service} onChange={(event) => setService(event.target.value)} aria-label="Filtrar por serviço"><option value="">Todos os serviços</option>{SUGGESTED_SERVICES.map((item) => <option key={item}>{item}</option>)}<option value="none">Sem serviço</option></Select>
           </div>
         </div>
-        {leadsQuery.isLoading ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <LeadsTable leads={filtered} followUps={followUps.byLead} onOpen={openLead} onWhatsApp={openWhatsApp} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} />}
-        {!leadsQuery.isLoading && total ? <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-5 py-3 text-xs text-zinc-600"><span>Mostrando {filtered.length} de {total} leads</span><span className="flex gap-1"><Button variant="ghost" size="sm" className="text-zinc-500" onClick={downloadModel}><Download className="h-3.5 w-3.5" /> Modelo de planilha</Button><Button variant="ghost" size="sm" className="text-zinc-600 hover:text-red-300" onClick={() => setClearOpen(true)}><Trash2 className="h-3.5 w-3.5" /> Limpar leads</Button></span></div> : null}
+        {leadsQuery.isPending ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <div className={leadsQuery.isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}><LeadsTable leads={rows} followUps={followUps.byLead} onOpen={openLead} onWhatsApp={openWhatsApp} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} /></div>}
+        {!leadsQuery.isLoading && !leadsQuery.isError && (filteredTotal || total) ? <div className="border-t border-line px-4 py-3 sm:px-5"><Pagination page={page} pageSize={pageSize} total={filteredTotal} onPageChange={(next) => { setPage(next); window.scrollTo({ top: 0, behavior: "smooth" }); }} onPageSizeChange={setPageSize} loading={leadsQuery.isFetching} /></div> : null}
+        {!leadsQuery.isLoading && total ? <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-5 py-3 text-xs text-zinc-600"><span>{total} leads no total{filteredTotal !== total ? ` · ${filteredTotal} com os filtros atuais` : ""}</span><span className="flex gap-1"><Button variant="ghost" size="sm" className="text-zinc-500" onClick={downloadModel}><Download className="h-3.5 w-3.5" /> Modelo de planilha</Button><Button variant="ghost" size="sm" className="text-zinc-600 hover:text-red-300" onClick={() => setClearOpen(true)}><Trash2 className="h-3.5 w-3.5" /> Limpar leads</Button></span></div> : null}
         {!leadsQuery.isLoading && !total ? <div className="border-t border-line px-5 py-3 text-center text-xs"><Button variant="ghost" size="sm" className="text-zinc-500" onClick={downloadModel}><Download className="h-3.5 w-3.5" /> Baixar modelo de planilha</Button></div> : null}
       </Card>
 

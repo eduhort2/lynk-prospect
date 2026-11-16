@@ -26,6 +26,9 @@ const aliases: Record<string, string[]> = {
   // "WhatsApp confirmado": aceita o próprio número ou Sim/Não.
   whatsapp_confirmed: ["whatsapp confirmado", "wpp confirmado", "confirmado whatsapp"],
   suggested_service: ["serviço sugerido", "servico sugerido", "serviço", "servico"],
+  suggested_service_detail: ["detalhe do serviço", "detalhe do servico", "serviço (outro)", "servico (outro)"],
+  marketplace_url: ["link da loja", "loja no mercado livre", "link mercado livre", "loja ml", "link ml"],
+  marketplace_listings: ["anúncios", "anuncios", "quantidade de anúncios", "quantidade de anuncios", "qtd anúncios", "qtd anuncios"],
   email: ["email", "e-mail"],
   segment: ["segmento", "segment", "categoria"],
   city: ["cidade", "city"],
@@ -128,6 +131,7 @@ function mapProspectingStatus(value: string): LeadStatus {
 export function mapSuggestedService(value: string): SuggestedService | null {
   const normalized = normalizeSpreadsheetKey(value);
   if (!normalized) return null;
+  if (normalized.includes("mercadolivre") || normalized.includes("mercadolibre") || normalized === "ml" || normalized.startsWith("lojanoml")) return "Loja no Mercado Livre";
   if (normalized.includes("logistica") || normalized.includes("entrega") || normalized.includes("frota")) return "Logística";
   if (normalized.includes("estoque") || normalized.includes("inventario")) return "Estoque";
   if (normalized.includes("whatsapp") || normalized.startsWith("ia") || normalized.includes("assistente") || normalized.includes("chatbot")) return "IA para WhatsApp";
@@ -172,6 +176,9 @@ function mapRow(row: Record<string, unknown>, fileName: string): ImportedLeadRow
     // declara como WhatsApp, e só é confirmado com a coluna "WhatsApp confirmado".
     ...mapWhatsApp(row),
     suggested_service: mapSuggestedService(getText(row, "suggested_service")),
+    suggested_service_detail: getText(row, "suggested_service_detail") || null,
+    marketplace_url: getText(row, "marketplace_url") || null,
+    marketplace_listings: (() => { const n = Number(getText(row, "marketplace_listings").replace(/\D/g, "")); return getText(row, "marketplace_listings") && Number.isFinite(n) ? n : null; })(),
     whatsapp_opt_in: parseBoolean(getRaw(row, "whatsapp_opt_in")),
     whatsapp_opt_in_source: getText(row, "whatsapp_opt_in_source") || null,
     whatsapp_opt_in_at: parseBoolean(getRaw(row, "whatsapp_opt_in")) ? new Date().toISOString() : null,

@@ -31,6 +31,12 @@ where table_schema = 'public' and table_name = 'leads'
 
 Devem aparecer as duas colunas. Se rodar a migração duas vezes por engano, não há problema.
 
+## Passo 1b — Migração 006 e chave da SerpApi (v3.2, 5 min)
+
+1. No **SQL Editor**, rode `supabase/migrations/006_lead_finder.sql`. Ela é aditiva e pode rodar mais de uma vez.
+2. Na Vercel → **Settings → Environment Variables**, cadastre `SERPAPI_API_KEY` com a mesma chave usada no Lynk CRM. Opcional: `SERPAPI_ENGINE=bing`.
+3. Confirme que `SUPABASE_SERVICE_ROLE_KEY` está cadastrada. Ela é usada para devolver os créditos não usados de cada busca.
+
 ## Passo 2 — Enviar o código para o GitHub (5 min)
 
 Na pasta do projeto (substitua o conteúdo do repositório pelo desta versão, mantendo a pasta `.git`):
@@ -63,7 +69,10 @@ A Vercel cria um **Preview** dessa branch automaticamente.
 4. **Editar** → preencha WhatsApp e marque **WhatsApp confirmado** → salvar. Agora aparece **Abrir WhatsApp**; edite a mensagem e clique: a conversa abre com o texto editado e a etapa continua **Novo**.
 5. **Marcar como contatado** → etapa vira **Contatado**.
 6. **Próximo retorno** → escolha hoje → **Agendar**. Abra **Agenda**: o lead aparece em **Hoje**; clicar no nome abre a ficha.
-7. **Pipeline** → mude a etapa pelo seletor do card ou arrastando.
+7. **Pipeline** → mude a etapa pelo seletor do card ou arrastando. Troque “Cards por coluna” para 10 e use “Mostrar mais”.
+7b. Em **Leads**, troque “Por página” para 10, 50 e 100 e avance as páginas. Role a página para baixo e abra **Novo lead**: o formulário deve aparecer inteiro, com “Criar lead” visível.
+7c. Em **Buscar**, faça uma busca pequena (10) de "Assistente de IA" no seu nicho e cidade, e outra de "Loja no ML". Abra uma ficha: confira link da loja, anúncios, telefone e o botão "Abrir WhatsApp (a confirmar)" para celular.
+7d. Na lista de Leads, clique nos três pontinhos de uma linha: o menu deve aparecer inteiro.
 8. Importe uma planilha que já foi importada antes: a mensagem deve dizer “X já existentes preservados sem alteração”.
 9. Exclua o lead “TESTE v3.1” (menu “…” na lista).
 

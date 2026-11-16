@@ -16,7 +16,7 @@ export function useTasks() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tasks")
-        .select("*,lead:lead_id(id,company_name),responsible:user_id(id,name)")
+        .select("*,lead:lead_id(id,company_name,status,suggested_service),responsible:user_id(id,name)")
         .eq("organization_id", organizationId!)
         .order("scheduled_at", { ascending: true });
       if (error) throw error;

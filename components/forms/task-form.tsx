@@ -21,7 +21,7 @@ export function TaskForm({
   loading,
 }: {
   initialDate?: Date;
-  leads: Lead[];
+  leads: Pick<Lead, "id" | "company_name">[];
   members: OrganizationMember[];
   currentUserId: string;
   onSubmit: (values: TaskFormValues) => Promise<void>;

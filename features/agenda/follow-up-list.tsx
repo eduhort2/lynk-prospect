@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { followUpBucket, useScheduleFollowUp, type FollowUpBucket } from "@/features/leads/follow-ups";
 import { stageInfo, stageLabel } from "@/features/leads/stages";
 import { cn } from "@/lib/utils";
-import type { Lead, Task } from "@/types";
+import type { Task } from "@/types";
 
 const GROUPS: Array<{ key: FollowUpBucket; title: string; empty: string; icon: typeof AlertCircle; tone: string }> = [
   { key: "overdue", title: "Atrasados", empty: "Nenhum retorno atrasado.", icon: AlertCircle, tone: "text-red-300" },
@@ -26,9 +26,8 @@ function when(task: Task, bucket: FollowUpBucket) {
 }
 
 /** Retornos pendentes dos leads, agrupados em atrasados, hoje e próximos. */
-export function FollowUpList({ tasks, leads }: { tasks: Task[]; leads: Lead[] }) {
+export function FollowUpList({ tasks }: { tasks: Task[] }) {
   const actions = useScheduleFollowUp();
-  const leadById = new Map(leads.map((lead) => [lead.id, lead]));
   const pending = tasks
     .filter((task) => task.status === "pendente")
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
@@ -42,9 +41,8 @@ export function FollowUpList({ tasks, leads }: { tasks: Task[]; leads: Lead[] })
 
   async function postpone(task: Task) {
     const next = setMinutes(setHours(addDays(new Date(), 1), new Date(task.scheduled_at).getHours() || 9), new Date(task.scheduled_at).getMinutes());
-    const lead = task.lead_id ? leadById.get(task.lead_id) : undefined;
     try {
-      await actions.schedule(lead || { id: task.lead_id || "", company_name: task.title }, task, format(next, "yyyy-MM-dd'T'HH:mm"));
+      await actions.schedule(task.lead || { id: task.lead_id || "", company_name: task.title }, task, format(next, "yyyy-MM-dd'T'HH:mm"));
       toast.success("Retorno adiado para amanhã");
     } catch (error) { toast.error("Não foi possível reagendar", { description: error instanceof Error ? error.message : "Tente novamente." }); }
   }
@@ -63,7 +61,7 @@ export function FollowUpList({ tasks, leads }: { tasks: Task[]; leads: Lead[] })
             </header>
             <ul className="max-h-96 flex-1 divide-y divide-line overflow-y-auto">
               {items.length ? items.map((task) => {
-                const lead = task.lead_id ? leadById.get(task.lead_id) : undefined;
+                const lead = task.lead;
                 return (
                   <li key={task.id} className="flex items-center gap-2 px-4 py-3">
                     <div className="min-w-0 flex-1">
@@ -74,7 +72,7 @@ export function FollowUpList({ tasks, leads }: { tasks: Task[]; leads: Lead[] })
                       ) : <p className="truncate text-sm font-medium text-zinc-300">{task.title}</p>}
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500">
                         <span className={group.key === "overdue" ? "text-red-300" : undefined}>{when(task, group.key)}</span>
-                        {lead ? <Badge tone={stageInfo(lead.status).tone} className="px-2 py-0.5 text-[10px]">{stageLabel(lead.status)}</Badge> : null}
+                        {lead?.status ? <Badge tone={stageInfo(lead.status).tone} className="px-2 py-0.5 text-[10px]">{stageLabel(lead.status)}</Badge> : null}
                         {lead?.suggested_service ? <span>{lead.suggested_service}</span> : null}
                       </div>
                     </div>

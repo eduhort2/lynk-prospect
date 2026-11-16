@@ -21,6 +21,11 @@ const LEGACY_STAGE: Partial<Record<LeadStatus, StageStatus>> = {
   Negociação: "Proposta enviada",
 };
 
+/** Status gravados que pertencem a uma etapa visível (inclui os antigos agrupados). */
+export function statusesOfStage(stage: StageStatus): LeadStatus[] {
+  return [stage, ...(Object.entries(LEGACY_STAGE).filter(([, target]) => target === stage).map(([status]) => status as LeadStatus))];
+}
+
 export function stageOf(status: LeadStatus): StageStatus {
   return (LEGACY_STAGE[status] || status) as StageStatus;
 }

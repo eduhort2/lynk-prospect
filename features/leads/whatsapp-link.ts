@@ -1,4 +1,5 @@
 import type { Lead } from "@/types";
+import { normPhoneBR } from "./phone";
 
 const OFFICIAL_HOSTS = new Set(["wa.me", "api.whatsapp.com", "web.whatsapp.com", "whatsapp.com"]);
 
@@ -77,6 +78,21 @@ export function getOtherContactLink(lead: Pick<Lead, "contact_link">) {
   if (!lead.contact_link || isOfficialWhatsAppLink(lead.contact_link)) return null;
   const url = parseUrl(lead.contact_link);
   return url ? url.toString() : null;
+}
+
+/**
+ * "Provável WhatsApp": celular (DDD + 9) ainda não confirmado, no campo WhatsApp ou no telefone.
+ * Só existe quando NÃO há WhatsApp confirmado/link oficial. Telefone fixo nunca entra aqui.
+ */
+export function getProbableWhatsApp(
+  lead: Pick<Lead, "whatsapp" | "whatsapp_confirmed" | "contact_link" | "phone">,
+  message?: string | null,
+): { url: string; number: string } | null {
+  if (getWhatsAppTarget(lead)) return null;
+  const number = [lead.whatsapp, lead.phone].map(normPhoneBR).find((value) => value && value.length === 13);
+  if (!number) return null;
+  const text = (message || "").trim();
+  return { url: `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`, number };
 }
 
 export function hasWhatsApp(lead: Pick<Lead, "whatsapp" | "whatsapp_confirmed" | "contact_link">) {

@@ -20,6 +20,9 @@ function cleanLeadValues<T extends Partial<LeadFormValues>>(values: T) {
   }
   if (typeof cleaned.state === "string") cleaned.state = cleaned.state.toUpperCase();
   if ("website" in cleaned) cleaned.has_website = Boolean(cleaned.website);
+  if ("marketplace_listings" in cleaned) cleaned.marketplace_listings = cleaned.marketplace_listings === null ? null : Number(cleaned.marketplace_listings);
+  // Detalhe do serviço só faz sentido para "Outro" e "Loja no Mercado Livre".
+  if ("suggested_service" in cleaned && cleaned.suggested_service !== "Outro" && cleaned.suggested_service !== "Loja no Mercado Livre") cleaned.suggested_service_detail = null;
   return cleaned;
 }
 
@@ -100,6 +103,7 @@ export function useUpdateLead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["clients", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", organizationId] });
     },
   });
 }

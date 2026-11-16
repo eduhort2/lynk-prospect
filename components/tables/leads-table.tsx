@@ -2,12 +2,13 @@
 
 import { CalendarClock, ContactRound, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { followUpBucket } from "@/features/leads/follow-ups";
 import { stageInfo, stageLabel } from "@/features/leads/stages";
-import { hasWhatsApp } from "@/features/leads/whatsapp-link";
+import { getProbableWhatsApp, hasWhatsApp } from "@/features/leads/whatsapp-link";
 import { cn, formatDate } from "@/lib/utils";
 import type { Lead, Task } from "@/types";
 
@@ -36,34 +37,61 @@ export function LeadsTable({ leads, followUps, onOpen, onWhatsApp, onEdit, onDel
   onDelete: (lead: Lead) => void;
   onCreate: () => void;
 }) {
-  const [menu, setMenu] = useState<string | null>(null);
+  // O menu é desenhado num portal com posição fixa: dentro da tabela (overflow) ele era cortado.
+  const [menu, setMenu] = useState<{ lead: Lead; top: number; right: number; up: boolean } | null>(null);
 
   useEffect(() => {
     if (!menu) return;
     const close = () => setMenu(null);
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
     window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
   }, [menu]);
+
+  function toggleMenu(lead: Lead, button: HTMLElement) {
+    if (menu?.lead.id === lead.id) return setMenu(null);
+    const rect = button.getBoundingClientRect();
+    const MENU_HEIGHT = 96;
+    const up = window.innerHeight - rect.bottom < MENU_HEIGHT + 8;
+    setMenu({ lead, top: up ? rect.top - 4 : rect.bottom + 4, right: Math.max(8, window.innerWidth - rect.right), up });
+  }
 
   if (!leads.length) {
     return <EmptyState icon={ContactRound} title="Nenhum lead encontrado" description="Cadastre ou importe leads, ou ajuste a busca e os filtros." action={<Button onClick={onCreate}>Cadastrar lead</Button>} />;
   }
 
   const actions = (lead: Lead) => (
-    <div className="relative flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-      {hasWhatsApp(lead) ? <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-light" onClick={() => onWhatsApp(lead)} aria-label={`Abrir WhatsApp de ${lead.company_name}`} title="Abrir WhatsApp"><MessageCircle className="h-4 w-4" /></Button> : null}
-      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setMenu(menu === lead.id ? null : lead.id)} aria-label="Mais ações"><MoreHorizontal className="h-4 w-4" /></Button>
-      {menu === lead.id ? (
-        <div className="absolute right-0 top-10 z-20 w-40 rounded-xl border border-line bg-[#111] p-1.5 text-left shadow-2xl">
-          <button onClick={() => { onEdit(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><Pencil className="h-3.5 w-3.5" /> Editar dados</button>
-          <button onClick={() => { onDelete(lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-300 hover:bg-red-400/10"><Trash2 className="h-3.5 w-3.5" /> Excluir</button>
-        </div>
-      ) : null}
+    <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+      {hasWhatsApp(lead) ? <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-light" onClick={() => onWhatsApp(lead)} aria-label={`Abrir WhatsApp de ${lead.company_name}`} title="Abrir WhatsApp"><MessageCircle className="h-4 w-4" /></Button> : (() => {
+        const probable = getProbableWhatsApp(lead, lead.message);
+        return probable ? <a href={probable.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-amber-300 hover:bg-white/[.06]" aria-label={`Abrir WhatsApp a confirmar de ${lead.company_name}`} title="Celular — WhatsApp a confirmar"><MessageCircle className="h-4 w-4" /></a> : null;
+      })()}
+      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(event) => toggleMenu(lead, event.currentTarget)} aria-label="Mais ações" aria-haspopup="menu" aria-expanded={menu?.lead.id === lead.id}><MoreHorizontal className="h-4 w-4" /></Button>
     </div>
   );
 
   return (
     <>
+      {menu && typeof document !== "undefined" ? createPortal(
+        <div
+          role="menu"
+          onClick={(event) => event.stopPropagation()}
+          style={{ position: "fixed", right: menu.right, ...(menu.up ? { bottom: window.innerHeight - menu.top } : { top: menu.top }) }}
+          className="z-[55] w-44 rounded-xl border border-line bg-[#111] p-1.5 text-left shadow-2xl"
+        >
+          <button role="menuitem" onClick={() => { onEdit(menu.lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><Pencil className="h-3.5 w-3.5" /> Editar dados</button>
+          <button role="menuitem" onClick={() => { onDelete(menu.lead); setMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-300 hover:bg-red-400/10"><Trash2 className="h-3.5 w-3.5" /> Excluir</button>
+        </div>,
+        document.body,
+      ) : null}
       {/* Celular: cartões */}
       <ul className="divide-y divide-line md:hidden">
         {leads.map((lead) => (
