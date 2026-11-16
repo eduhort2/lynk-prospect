@@ -20,7 +20,8 @@ export function businessToLead(business: PublicBusiness, niche: string, region: 
     company_name: business.name,
     contact_name: null,
     phone: phone || null,
-    whatsapp: phone || null,
+    // v3.1: telefone de fonte pública não é WhatsApp confirmado.
+    whatsapp: null,
     email: null,
     segment: business.segment || niche,
     city: business.city,
@@ -37,7 +38,7 @@ export function businessToLead(business: PublicBusiness, niche: string, region: 
     prompt,
     differentiators: null,
     landing_page_opportunity: hasWebsite ? "Analisar clareza, velocidade e conversão do site existente." : "Criar presença própria com serviços, localização e contato centralizados.",
-    contact_link: phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : business.mapsUrl,
+    contact_link: null,
     best_contact_day: "Segunda a sexta-feira",
     best_contact_time: "09:00–11:30 ou 14:00–17:00",
     contact_time_reason: "Faixa comercial sugerida pelo sistema; confirme conforme o nicho.",

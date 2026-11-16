@@ -11,7 +11,7 @@ export const LEAD_STATUSES = [
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
-export const SUGGESTED_SERVICES = ["Site", "IA para WhatsApp", "Logística", "Estoque", "Outro"] as const;
+export const SUGGESTED_SERVICES = ["Site", "Loja no Mercado Livre", "IA para WhatsApp", "Logística", "Estoque", "Outro"] as const;
 export type SuggestedService = (typeof SUGGESTED_SERVICES)[number];
 export type Priority = "Baixa" | "Média" | "Alta";
 export type UserRole = "admin" | "manager" | "seller" | "developer";
@@ -45,6 +45,11 @@ export interface Lead {
   whatsapp: string | null;
   whatsapp_confirmed: boolean;
   suggested_service: SuggestedService | null;
+  suggested_service_detail?: string | null;
+  marketplace_url?: string | null;
+  marketplace_listings?: number | null;
+  marketplace_presence?: "confirmada" | "a_validar" | null;
+  whatsapp_source?: string | null;
   whatsapp_opt_in: boolean;
   whatsapp_opt_in_at: string | null;
   whatsapp_opt_in_source: string | null;
@@ -105,7 +110,7 @@ export interface Task {
   scheduled_at: string;
   status: TaskStatus;
   created_at: string;
-  lead?: Pick<Lead, "id" | "company_name"> | null;
+  lead?: (Pick<Lead, "id" | "company_name"> & Partial<Pick<Lead, "status" | "suggested_service">>) | null;
   responsible?: Pick<Profile, "id" | "name"> | null;
 }
 

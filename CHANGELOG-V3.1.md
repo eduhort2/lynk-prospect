@@ -1,5 +1,38 @@
 # LYNK Prospect v3.1 (versão enxuta)
 
+## Atualização v3.2 — Buscar leads
+
+- **Menu "..." da lista (corrigido):** o menu de cada linha abria dentro da tabela, que cortava o que passava da borda. Agora ele é desenhado por cima da página, na posição do botão, e abre para cima quando falta espaço embaixo. Fecha com clique fora, Esc ou rolagem.
+- **Nova área "Buscar"** (Leads · Buscar · Pipeline · Agenda). Você escolhe o serviço (**Site, Loja no ML, Assistente de IA, Logística, Estoque ou Outro**, com campo para especificar), o nicho, a região e a quantidade (10, 20 ou 30).
+  - **Empresas locais** (Site, IA, Logística, Estoque, Outro): Google Maps via SerpApi. Traz nome, segmento, bairro, cidade/UF, telefone, site, nota e avaliações e link do Maps. Lê a página inicial do site oficial atrás de WhatsApp (`wa.me`), telefone, e-mail e Instagram. Em "Site" dá para filtrar empresas com ou sem site.
+  - **Loja no Mercado Livre:** busca web `site:mercadolivre.com.br/loja <nicho> <região>` via SerpApi, com a mesma lógica do Lynk CRM. Agrupa os anúncios por loja e marca a presença como "confirmada" (página de loja ou perfil, ou selo de Loja oficial) ou "a validar". Traz **link da loja, nicho e quantidade de anúncios** quando o resultado informa; quando não informa, o campo fica "a conferir". O telefone e o WhatsApp vêm do Google Maps, **só quando o nome confere**, e do site oficial.
+  - Cada lead já chega com **mensagem personalizada por serviço**, sinal observado, oportunidade comercial, fonte e observações.
+  - Duplicados não são criados nem alterados. São cobrados do plano só os leads realmente criados (créditos de prospecção, como antes).
+- **WhatsApp:**
+  - Link `wa.me` publicado no site da empresa → **WhatsApp confirmado**, com o botão "Abrir WhatsApp".
+  - Celular (DDD + 9) sem esse link → **"provável WhatsApp"**: botão "Abrir WhatsApp (a confirmar)" e atalho "Marcar como WhatsApp confirmado". Na lista, o ícone aparece em âmbar.
+  - Telefone fixo nunca vira WhatsApp.
+- **Ficha e cadastro:** novos campos "Loja no Mercado Livre" (link), "Anúncios no ML", presença e detalhe do serviço ("Outro" / "O que oferecer para a loja"). O importador aceita as colunas "Link da loja", "Anúncios" e "Detalhe do serviço", e o serviço "Mercado Livre".
+- **Correção no módulo antigo `/prospeccao`:** ele não cria mais link de WhatsApp a partir de qualquer telefone.
+- **Migração `006_lead_finder.sql`** (aditiva): serviço "Loja no Mercado Livre", `suggested_service_detail`, `marketplace_url`, `marketplace_listings`, `marketplace_presence` e `whatsapp_source`.
+- **Limites honestos:**
+  - A API oficial do Mercado Livre responde 403 a consultas sem autorização e não fornece contato de vendedores. Por isso a busca usa resultados públicos de busca web, e o contato vem de fora do ML.
+  - A quantidade de anúncios depende do texto do resultado.
+  - Confira os dados antes de abordar.
+- Testes: `npm run test:finder` (10 testes, sem rede).
+
+## Atualização v3.1.1
+
+- **Formulários cortados (corrigido):** a animação de entrada das páginas (`.page-transition`) deixava um `transform` aplicado. Com isso, os modais se prendiam à página, e não à tela, e o cabeçalho cobria o topo do formulário; os botões de salvar sumiam. Agora o `Dialog` é renderizado em portal no `<body>`, sempre centralizado na tela. Também fecha com Esc e trava a rolagem do fundo. No celular, abre como painel de baixo para cima, com título e botões sempre visíveis. A correção vale para todos os modais do sistema, inclusive os dos módulos ocultos.
+- **10, 50 ou 100 leads por vez:**
+  - **Leads:** a lista agora é paginada **no servidor**. Só a página atual sai do banco, e a busca, os filtros e a contagem também rodam no Supabase. Há um seletor "Por página" (10/50/100) e navegação entre páginas.
+  - **Pipeline:** cada coluna carrega só os primeiros N cards, com o botão "Mostrar mais (X restantes)". O seletor fica em "Cards por coluna". Os totais das colunas e dos indicadores vêm do banco.
+  - **Agenda:** não carrega mais todos os leads. Os dados do lead (nome, etapa e serviço) vêm junto com cada tarefa, e o seletor de lead da tarefa busca só os nomes.
+  - A escolha (10/50/100) fica salva no navegador e vale para Leads e Pipeline. O padrão é 50.
+  - A ficha aberta por link (`/leads?lead=id`) carrega o lead direto do banco, mesmo que ele não esteja na página atual.
+- Observação: a busca agora roda no banco (`ilike`) e diferencia acentos. "Maringá" encontra "maring", mas "maringa" não encontra "Maringá".
+- Não há migração nova nesta atualização.
+
 Foco: organizar leads para vender Site, IA para WhatsApp, Logística, Estoque e outros serviços. A pesquisa é feita fora do sistema. No Lynk você importa ou cadastra, revisa a abordagem e acompanha a negociação.
 
 ## O que mudou
