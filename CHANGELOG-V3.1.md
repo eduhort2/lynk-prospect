@@ -1,5 +1,18 @@
 # LYNK Prospect v3.1 (versão enxuta)
 
+## Atualização v3.2.1 — busca do ML voltando 0
+
+- **Causa:** em 16/11/2026, o Bing via SerpApi passou a ignorar `site:mercadolivre.com.br/loja` e devolvia páginas sem relação ou nada. As buscas do ML terminavam com 0 encontrados.
+- **Correção:** o padrão agora é o **Google**, testado com a chave real e trazendo lojas reais. O Bing fica como reserva automática quando o Google não traz nenhuma loja. `SERPAPI_ENGINE=bing` força o Bing.
+- A região não entra mais na pesquisa web do ML, porque o Google a ignora e ela reduzia os resultados. Ela passou a ser usada para achar o contato da loja no Google Maps.
+- O link da loja é salvo limpo, sem parâmetros de rastreio, e o "| Loja Oficial" sai do nome.
+- **Créditos do plano:** a cobrança agora acontece só depois da busca, pelos leads realmente criados. Não depende mais de `SUPABASE_SERVICE_ROLE_KEY`; antes, sem essa chave, os créditos reservados não eram devolvidos.
+- Quando a busca não acha nada, a tela explica o motivo (ex.: "a pesquisa retornou 10 resultados, mas nenhum era loja do ML"). O diagnóstico também fica salvo no histórico da busca.
+- O CNPJ e o endereço que aparecem no trecho das páginas do ML são do próprio Mercado Livre (rodapé), não da loja. Por isso não são usados.
+- **Teste real (SerpApi verdadeira, banco local):**
+  - "autopeças" no ML trouxe Auto Peças Gisela e Blumax, com WhatsApp confirmado pelo site, e Circular Autopeças, com celular provável.
+  - "dentista" em Curitiba trouxe 3 clínicas com telefone e site, 2 delas com WhatsApp confirmado.
+
 ## Atualização v3.2 — Buscar leads
 
 - **Menu "..." da lista (corrigido):** o menu de cada linha abria dentro da tabela, que cortava o que passava da borda. Agora ele é desenhado por cima da página, na posição do botão, e abre para cima quando falta espaço embaixo. Fecha com clique fora, Esc ou rolagem.

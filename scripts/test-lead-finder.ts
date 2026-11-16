@@ -41,6 +41,19 @@ test("Mercado Livre: identifica loja, agrupa anúncios e lê quantidade quando o
   assert.ok(!stores.some((store) => store.url.includes("circularautopecas.com.br")), "site fora do ML não vira loja");
 });
 
+test("Mercado Livre: formato real do Google (16/11/2026) — títulos, links com rastreio e repetidos", () => {
+  const stores = groupMercadoLivreResults([
+    { title: "Auto Peças Gisela | Loja Oficial", link: "https://www.mercadolivre.com.br/loja/auto-pecas-gisela", snippet: "Categorias em destaque · Freios · Suspensão" },
+    { title: "Blumax Autopeças | Loja Oficial", link: "https://www.mercadolivre.com.br/loja/blumax-autopecas?category_id=MLB47102&item_id=MLB6738620812&recos_listing=true&client=recoview-selleritems&official_store_id=309186", snippet: "Peças para caminhonetes" },
+    { title: "Blumax Autopeças | Loja Oficial", link: "https://www.mercadolivre.com.br/loja/blumax-autopecas?category_id=MLB22714&item_id=MLB5277410150", snippet: "Peças para caminhonetes" },
+    { title: "Loja Sao Paulo Auto Pecas", link: "https://lista.mercadolivre.com.br/loja-sao-paulo-auto-pecas", snippet: "Frete grátis no dia" },
+    { title: "Quibao Auto Peças Linha Pesada - Capivari", link: "https://www.mercadolivre.com.br/loja/quibao?searchVariation=182270558589", snippet: "Pedidos online WhatsApp." },
+  ]);
+  assert.deepEqual(stores.map((store) => store.name), ["Auto Peças Gisela", "Blumax Autopeças", "Quibao Auto Peças Linha Pesada - Capivari"]);
+  assert.equal(stores[1].url, "https://www.mercadolivre.com.br/loja/blumax-autopecas", "link limpo, sem rastreio");
+  assert.ok(stores.every((store) => store.presence === "confirmada"));
+});
+
 test("conferência de nome exige as palavras distintivas", () => {
   assert.equal(nameMatch("Circular Autopeças", "Circular Auto Peças - Curitiba"), 1);
   assert.equal(nameMatch("Circular Autopeças", "Central Autopeças"), 0);

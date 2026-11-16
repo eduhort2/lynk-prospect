@@ -40,8 +40,16 @@ async function call(params: Record<string, string>) {
   return json as Record<string, unknown> & { empty?: boolean };
 }
 
-/** Pesquisa web. Bing é o padrão: o Google via SerpApi passou a ignorar "site:mercadolivre.com.br/loja". */
-export async function webSearch(query: string, limit: number, engine: SearchEngine = process.env.SERPAPI_ENGINE === "google" ? "google" : "bing"): Promise<Organic[]> {
+/**
+ * Pesquisa web. Google é o padrão: em 16/11/2026 o Bing via SerpApi passou a ignorar
+ * "site:mercadolivre.com.br/loja" (devolvia páginas sem relação), e o Google voltou a respeitar.
+ * SERPAPI_ENGINE=bing força o Bing.
+ */
+export function defaultEngine(): SearchEngine {
+  return process.env.SERPAPI_ENGINE === "bing" ? "bing" : "google";
+}
+
+export async function webSearch(query: string, limit: number, engine: SearchEngine = defaultEngine()): Promise<Organic[]> {
   const out: Organic[] = [];
   for (let start = 0; start < limit; start += 10) {
     const params: Record<string, string> = engine === "bing"
