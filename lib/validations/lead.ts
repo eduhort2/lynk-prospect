@@ -1,25 +1,28 @@
 import { z } from "zod";
-import { LEAD_STATUSES } from "@/types";
+import { LEAD_STATUSES, SUGGESTED_SERVICES } from "@/types";
 
+const optionalText = z.string().trim().optional();
+
+/** Cadastro enxuto: apenas o nome da empresa é obrigatório. */
 export const leadSchema = z.object({
-  company_name: z.string().trim().min(2, "Informe o nome da empresa"),
-  contact_name: z.string().trim().optional(),
-  phone: z.string().trim().optional(),
-  whatsapp: z.string().trim().optional(),
-  whatsapp_opt_in: z.boolean(),
-  whatsapp_opt_in_source: z.string().trim().optional(),
-  email: z.string().trim().email("E-mail inválido").or(z.literal("")).optional(),
-  segment: z.string().trim().optional(),
-  city: z.string().trim().optional(),
+  company_name: z.string().trim().min(1, "Informe o nome da empresa"),
+  contact_name: optionalText,
+  segment: optionalText,
+  city: optionalText,
   state: z.string().trim().max(2, "Use a sigla do estado").optional(),
-  instagram: z.string().trim().optional(),
-  website: z.string().trim().optional(),
-  has_website: z.boolean(),
-  source: z.string().trim().optional(),
-  priority: z.enum(["Baixa", "Média", "Alta"]),
+  phone: optionalText,
+  email: z.string().trim().email("E-mail inválido").or(z.literal("")).optional(),
+  website: optionalText,
+  whatsapp: optionalText,
+  whatsapp_confirmed: z.boolean(),
+  contact_link: optionalText,
+  suggested_service: z.enum(SUGGESTED_SERVICES).or(z.literal("")).optional(),
+  differentiators: optionalText,
+  landing_page_opportunity: optionalText,
+  public_source: optionalText,
+  message: optionalText,
+  observations: optionalText,
   status: z.enum(LEAD_STATUSES),
-  responsible_user: z.string().optional(),
-  message: z.string().trim().optional(),
 });
 
 export type LeadFormValues = z.infer<typeof leadSchema>;

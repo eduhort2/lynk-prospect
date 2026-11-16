@@ -8,7 +8,8 @@ const result = parseProspectingWorkbook(workbook, source.split(/[\\/]/).pop() ||
 
 const uniqueKeys = new Set(result.rows.map((row) => row.import_key));
 const highPriority = result.rows.filter((row) => row.priority === "Alta").length;
-const withPhone = result.rows.filter((row) => row.whatsapp).length;
+// Desde a v3.1 o telefone não é copiado para o WhatsApp; a contagem usa o telefone.
+const withPhone = result.rows.filter((row) => row.phone).length;
 const withContactLink = result.rows.filter((row) => row.contact_link).length;
 
 const assertions: Array<[boolean, string]> = [

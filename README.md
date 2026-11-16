@@ -1,6 +1,8 @@
-# LYNK Prospect v3.0
+# LYNK Prospect v3.1
 
 CRM de prospecção, pipeline comercial e gerenciamento de landing pages desenvolvido pela LYNK.
+
+> **v3.1 — versão enxuta:** o menu mostra apenas Leads, Pipeline e Agenda. Os demais módulos continuam no código e nas rotas. Antes de publicar, aplique `supabase/migrations/005_lean_prospect.sql`. Detalhes, verificações e passos em [CHANGELOG-V3.1.md](CHANGELOG-V3.1.md). Passo a passo de ativação: [docs/ativacao-v3.1.md](docs/ativacao-v3.1.md).
 
 ## Produto
 
@@ -37,7 +39,7 @@ Next.js 15, TypeScript, App Router, Tailwind CSS, Lucide, Supabase, TanStack Que
 ## Início rápido
 
 1. Leia [docs/instalação.md](docs/instalação.md).
-2. Em uma instalação existente, execute [003_commercial_saas.sql](supabase/migrations/003_commercial_saas.sql) e depois [004_lean_integrations.sql](supabase/migrations/004_lean_integrations.sql).
+2. Em uma instalação existente, execute [003_commercial_saas.sql](supabase/migrations/003_commercial_saas.sql), [004_lean_integrations.sql](supabase/migrations/004_lean_integrations.sql) e [005_lean_prospect.sql](supabase/migrations/005_lean_prospect.sql).
 3. Copie `.env.example` para `.env.local` e configure Supabase. A busca gratuita e o gerador local funcionam sem Google Places nem IA.
 4. Rode `npm install` e `npm run dev`.
 

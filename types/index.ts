@@ -10,6 +10,9 @@ export const LEAD_STATUSES = [
 ] as const;
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export const SUGGESTED_SERVICES = ["Site", "IA para WhatsApp", "Logística", "Estoque", "Outro"] as const;
+export type SuggestedService = (typeof SUGGESTED_SERVICES)[number];
 export type Priority = "Baixa" | "Média" | "Alta";
 export type UserRole = "admin" | "manager" | "seller" | "developer";
 export type PlanCode = "free" | "starter" | "pro" | "business";
@@ -40,6 +43,8 @@ export interface Lead {
   contact_name: string | null;
   phone: string | null;
   whatsapp: string | null;
+  whatsapp_confirmed: boolean;
+  suggested_service: SuggestedService | null;
   whatsapp_opt_in: boolean;
   whatsapp_opt_in_at: string | null;
   whatsapp_opt_in_source: string | null;
