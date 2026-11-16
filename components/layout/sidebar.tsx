@@ -19,21 +19,26 @@ import { Logo } from "@/components/layout/logo";
 import { useSubscription } from "@/features/billing/use-subscription";
 import { cn } from "@/lib/utils";
 
+// Versão enxuta: o Sidebar não é usado pelo AppShell atual. Os módulos ocultos
+// ficam listados em HIDDEN_MODULES para facilitar a reativação.
 const primary = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: ContactRound },
-  { href: "/prospeccao", label: "Gerar prospecção", icon: SearchCheck },
   { href: "/pipeline", label: "Pipeline", icon: ListFilter },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
-  { href: "/clientes", label: "Clientes", icon: UsersRound },
-  { href: "/projetos", label: "Projetos", icon: FolderKanban },
-  { href: "/prompts", label: "Prompts", icon: WandSparkles },
 ];
 
 const secondary = [
+  { href: "/configuracoes", label: "Conta", icon: Settings },
+];
+
+export const HIDDEN_MODULES = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/prospeccao", label: "Gerar prospecção", icon: SearchCheck },
+  { href: "/clientes", label: "Clientes", icon: UsersRound },
+  { href: "/projetos", label: "Projetos", icon: FolderKanban },
+  { href: "/prompts", label: "Prompts", icon: WandSparkles },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/planos", label: "Plano e cobrança", icon: CreditCard },
-  { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 function NavLink({ item }: { item: (typeof primary)[number] }) {

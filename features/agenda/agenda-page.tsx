@@ -3,6 +3,7 @@
 import { addDays, addMonths, addWeeks, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfDay, startOfMonth, startOfWeek, subDays, subMonths, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarCheck2, Check, ChevronLeft, ChevronRight, CircleX, Clock3, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TaskForm } from "@/components/forms/task-form";
@@ -18,6 +19,7 @@ import { useLeads } from "@/features/leads/use-leads";
 import { cn } from "@/lib/utils";
 import type { TaskFormValues } from "@/lib/validations/task";
 import type { Task } from "@/types";
+import { FollowUpList } from "./follow-up-list";
 import { useCreateTask, useDeleteTask, useTasks, useUpdateTask } from "./use-tasks";
 
 type View = "month" | "week" | "day";
@@ -27,7 +29,7 @@ const statusTone = { pendente: "blue", "concluído": "green", cancelado: "red" }
 function TaskChip({ task, onComplete, onCancel, onDelete }: { task: Task; onComplete: () => void; onCancel: () => void; onDelete: () => void }) {
   return (
     <div className="group rounded-lg border border-line bg-[#111] p-2.5">
-      <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className={cn("truncate text-xs font-medium text-zinc-200", task.status !== "pendente" && "line-through opacity-60")}>{task.title}</p><p className="mt-1 flex items-center gap-1 text-[10px] text-zinc-600"><Clock3 className="h-3 w-3" />{format(new Date(task.scheduled_at), "HH:mm")} {task.lead ? `· ${task.lead.company_name}` : ""}</p></div><Badge tone={statusTone[task.status]} className="shrink-0 px-1.5 py-0.5 text-[9px]">{task.status}</Badge></div>
+      <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className={cn("truncate text-xs font-medium text-zinc-200", task.status !== "pendente" && "line-through opacity-60")}>{task.title}</p><p className="mt-1 flex items-center gap-1 text-[10px] text-zinc-600"><Clock3 className="h-3 w-3" />{format(new Date(task.scheduled_at), "HH:mm")} {task.lead ? <>· <Link href={`/leads?lead=${task.lead.id}`} className="hover:text-primary-light hover:underline">{task.lead.company_name}</Link></> : null}</p></div><Badge tone={statusTone[task.status]} className="shrink-0 px-1.5 py-0.5 text-[9px]">{task.status}</Badge></div>
       <div className="mt-2 hidden items-center justify-end gap-1 group-hover:flex">
         {task.status === "pendente" ? <><Button variant="ghost" size="sm" className="h-7 px-2" onClick={onComplete}><Check className="h-3 w-3" /> Concluir</Button><Button variant="ghost" size="icon" className="h-7 w-7 text-amber-300" onClick={onCancel} aria-label="Cancelar tarefa"><CircleX className="h-3.5 w-3.5" /></Button></> : null}
         <Button variant="ghost" size="icon" className="h-7 w-7 text-red-300" onClick={onDelete} aria-label="Excluir tarefa"><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -86,7 +88,9 @@ export function AgendaPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Organização" title="Agenda" description="Acompanhe retornos, reuniões e atividades em visualização diária, semanal ou mensal." actions={<Button onClick={() => openAt(cursor)}><Plus className="h-4 w-4" /> Nova tarefa</Button>} />
+      <PageHeader eyebrow="Retornos" title="Agenda" description="Retornos atrasados, de hoje e próximos. Clique na empresa para abrir a ficha." actions={<Button variant="secondary" onClick={() => openAt(cursor)}><Plus className="h-4 w-4" /> Nova tarefa</Button>} />
+      {tasksQuery.isLoading ? null : <FollowUpList tasks={tasks} leads={leadsQuery.data || []} />}
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-[.16em] text-zinc-500">Calendário</h2>
       <Card className="overflow-hidden">
         <div className="flex flex-col justify-between gap-3 border-b border-line p-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2"><Button variant="secondary" size="sm" onClick={() => setCursor(new Date())}>Hoje</Button><Button variant="ghost" size="icon" onClick={previous} aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={next} aria-label="Próximo"><ChevronRight className="h-4 w-4" /></Button><h2 className="ml-2 text-sm font-semibold capitalize text-white">{title}</h2></div>

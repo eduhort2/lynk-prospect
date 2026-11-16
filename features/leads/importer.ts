@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import type { Lead, LeadStatus, Priority } from "@/types";
+import type { Lead, LeadStatus, Priority, SuggestedService } from "@/types";
 import { buildLeadImportKey, normalizeSpreadsheetKey } from "./import-key";
 
 export type ImportedLeadRow = Partial<Lead> & {
@@ -19,7 +19,13 @@ const aliases: Record<string, string[]> = {
   source_external_id: ["id", "codigo", "código"],
   company_name: ["negócio", "negocio", "empresa", "nome da empresa", "company", "company name", "razão social", "nome"],
   contact_name: ["contato", "nome do contato", "contact", "contact name", "responsável"],
+  // Mantido igual às versões anteriores: define o telefone e a chave de deduplicação.
   phone: ["telefone", "phone", "fone", "whatsapp", "wpp", "celular"],
+  // Coluna explícita de WhatsApp. O número fica registrado, mas NÃO é confirmado.
+  whatsapp: ["whatsapp", "wpp", "numero whatsapp", "número whatsapp"],
+  // "WhatsApp confirmado": aceita o próprio número ou Sim/Não.
+  whatsapp_confirmed: ["whatsapp confirmado", "wpp confirmado", "confirmado whatsapp"],
+  suggested_service: ["serviço sugerido", "servico sugerido", "serviço", "servico"],
   email: ["email", "e-mail"],
   segment: ["segmento", "segment", "categoria"],
   city: ["cidade", "city"],
@@ -33,8 +39,8 @@ const aliases: Record<string, string[]> = {
   status: ["status", "etapa"],
   message: ["mensagem personalizada", "mensagem", "message"],
   prompt: ["prompt para gerar site", "prompt"],
-  differentiators: ["diferenciais observados", "diferenciais"],
-  landing_page_opportunity: ["oportunidade da landing page", "oportunidade"],
+  differentiators: ["sinal observado", "sinais observados", "diferenciais observados", "diferenciais"],
+  landing_page_opportunity: ["oportunidade comercial", "oportunidade da landing page", "oportunidade"],
   contact_link: ["link para contato", "link de contato"],
   best_contact_day: ["melhor dia", "dia para contato"],
   best_contact_time: ["melhor horário", "melhor horario", "horário", "horario"],
@@ -45,7 +51,7 @@ const aliases: Record<string, string[]> = {
   contacted_at: ["data do contato", "data contato"],
   response: ["resposta", "retorno"],
   offered_value: ["valor oferecido", "valor", "preço", "preco"],
-  observations: ["observações", "observacoes", "observação", "observacao"],
+  observations: ["observações", "observacoes", "observação", "observacao", "notas", "notas de acompanhamento"],
   whatsapp_opt_in: ["consentimento whatsapp", "opt-in whatsapp", "optin whatsapp", "autorizou whatsapp"],
   whatsapp_opt_in_source: ["origem do consentimento", "fonte do consentimento"],
 };
@@ -114,9 +120,29 @@ function mapProspectingStatus(value: string): LeadStatus {
   if (normalized.includes("negociacao")) return "Negociação";
   if (normalized.includes("proposta")) return "Proposta enviada";
   if (normalized.includes("reuniao")) return "Reunião marcada";
-  if (normalized.includes("respondeu") || normalized.includes("resposta")) return "Respondeu";
-  if (normalized.includes("contato") || normalized.includes("mensagemenviada")) return "Contato enviado";
+  if (normalized.includes("respondeu") || normalized.includes("resposta") || normalized.includes("emconversa")) return "Respondeu";
+  if (normalized.includes("contato") || normalized.includes("contatado") || normalized.includes("mensagemenviada")) return "Contato enviado";
   return "Novo";
+}
+
+export function mapSuggestedService(value: string): SuggestedService | null {
+  const normalized = normalizeSpreadsheetKey(value);
+  if (!normalized) return null;
+  if (normalized.includes("logistica") || normalized.includes("entrega") || normalized.includes("frota")) return "Logística";
+  if (normalized.includes("estoque") || normalized.includes("inventario")) return "Estoque";
+  if (normalized.includes("whatsapp") || normalized.startsWith("ia") || normalized.includes("assistente") || normalized.includes("chatbot")) return "IA para WhatsApp";
+  if (normalized.includes("site") || normalized.includes("landing") || normalized.includes("pagina")) return "Site";
+  return "Outro";
+}
+
+/** Lê WhatsApp sem confundir telefone comum com WhatsApp confirmado. */
+function mapWhatsApp(row: Record<string, unknown>) {
+  const explicit = getText(row, "whatsapp");
+  const confirmedRaw = getText(row, "whatsapp_confirmed");
+  const confirmedNumber = confirmedRaw.replace(/\D/g, "").length >= 10 ? confirmedRaw : "";
+  const confirmedFlag = Boolean(confirmedNumber) || parseBoolean(confirmedRaw);
+  const whatsapp = confirmedNumber || explicit || "";
+  return { whatsapp: whatsapp || null, whatsapp_confirmed: confirmedFlag && Boolean(whatsapp) };
 }
 
 function inferLocation(fileName: string) {
@@ -142,7 +168,10 @@ function mapRow(row: Record<string, unknown>, fileName: string): ImportedLeadRow
     company_name,
     contact_name: getText(row, "contact_name") || null,
     phone: phone || null,
-    whatsapp: phone || null,
+    // Antes o telefone era copiado para "whatsapp". Agora só entra o que a planilha
+    // declara como WhatsApp, e só é confirmado com a coluna "WhatsApp confirmado".
+    ...mapWhatsApp(row),
+    suggested_service: mapSuggestedService(getText(row, "suggested_service")),
     whatsapp_opt_in: parseBoolean(getRaw(row, "whatsapp_opt_in")),
     whatsapp_opt_in_source: getText(row, "whatsapp_opt_in_source") || null,
     whatsapp_opt_in_at: parseBoolean(getRaw(row, "whatsapp_opt_in")) ? new Date().toISOString() : null,
@@ -175,7 +204,9 @@ function mapRow(row: Record<string, unknown>, fileName: string): ImportedLeadRow
     observations: getText(row, "observations") || null,
     import_key: "",
   };
-  mapped.import_key = buildLeadImportKey(mapped);
+  // A chave usa o mesmo valor das versões anteriores (o telefone), para que
+  // planilhas já importadas continuem sendo reconhecidas como duplicadas.
+  mapped.import_key = buildLeadImportKey({ ...mapped, whatsapp: null });
   return mapped;
 }
 

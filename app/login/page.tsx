@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.replace("/dashboard");
+      if (data.user) router.replace("/leads");
     });
   }, [router, supabase]);
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
         if (error) throw error;
       }
 
-      router.replace("/dashboard");
+      router.replace("/leads");
       router.refresh();
     } catch (error) {
       toast.error(mode === "signup" ? "Não foi possível criar a conta" : "Não foi possível entrar", {
