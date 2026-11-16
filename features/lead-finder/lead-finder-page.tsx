@@ -19,7 +19,7 @@ type ResultLead = {
   id: string; company_name: string; city: string | null; state: string | null; phone: string | null; whatsapp: string | null;
   whatsapp_confirmed: boolean; website: string | null; marketplace_url: string | null; marketplace_listings: number | null;
 };
-type Result = { found: number; imported: ResultLead[]; existing: ResultLead[] };
+type Result = { found: number; imported: ResultLead[]; existing: ResultLead[]; diagnostics?: { rawResults: number; candidates: number; note?: string } };
 
 const SERVICES: Array<{ value: FinderService; label: string; hint: string; icon: typeof Globe }> = [
   { value: "Site", label: "Site", hint: "Empresas locais no Google Maps", icon: Globe },
@@ -78,7 +78,8 @@ export function LeadFinderPage() {
       if (!response.ok) throw new Error(data.error || "Não foi possível buscar leads");
       setResult(data);
       queryClient.invalidateQueries({ queryKey: ["leads", organizationId] });
-      toast.success(`${data.imported.length} ${data.imported.length === 1 ? "lead novo" : "leads novos"} no Lynk`, { description: data.existing.length ? `${data.existing.length} já estavam cadastrados e não foram alterados.` : undefined });
+      if (!data.imported.length && !data.existing.length) toast.warning("Nenhuma empresa encontrada", { description: data.diagnostics?.note || "Tente outro nicho ou região." });
+      else toast.success(`${data.imported.length} ${data.imported.length === 1 ? "lead novo" : "leads novos"} no Lynk`, { description: data.existing.length ? `${data.existing.length} já estavam cadastrados e não foram alterados.` : undefined });
     } catch (error) {
       toast.error("Busca não concluída", { description: error instanceof Error ? error.message : "Tente novamente." });
     } finally {
@@ -146,7 +147,7 @@ export function LeadFinderPage() {
           <div className="flex flex-col-reverse gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs leading-relaxed text-zinc-500">
               {isMl
-                ? "Lojas encontradas pela busca web no Mercado Livre. O ML não divulga o contato dos vendedores: o telefone vem do Google Maps quando o nome confere, e o WhatsApp do site oficial."
+                ? "Lojas do Mercado Livre encontradas pela pesquisa do Google. A região serve para achar o contato da loja no Google Maps (só quando o nome confere); o ML não divulga telefone dos vendedores."
                 : "Empresas do Google Maps. WhatsApp “confirmado” = link wa.me no site da empresa; celular sem esse link fica como “provável”."}
             </p>
             <Button type="submit" disabled={loading} className="shrink-0">{loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando...</> : <><Search className="h-4 w-4" /> Buscar leads</>}</Button>
@@ -164,7 +165,7 @@ export function LeadFinderPage() {
             <span className="text-xs text-zinc-500">· {result.found} encontrados{result.existing.length ? ` · ${result.existing.length} já estavam no Lynk` : ""}</span>
             <Link href="/leads" className="ml-auto text-xs text-primary-light hover:underline">Ver todos em Leads</Link>
           </header>
-          {result.imported.length ? <ul className="divide-y divide-line">{result.imported.map((lead) => <ResultRow key={lead.id} lead={lead} />)}</ul> : <p className="px-4 py-6 text-center text-sm text-zinc-500">Nenhum lead novo nesta busca. Tente outro nicho ou região.</p>}
+          {result.imported.length ? <ul className="divide-y divide-line">{result.imported.map((lead) => <ResultRow key={lead.id} lead={lead} />)}</ul> : <p className="px-4 py-6 text-center text-sm text-zinc-500">{result.existing.length ? "Todas as empresas encontradas já estavam no Lynk." : result.diagnostics?.note || "Nenhuma empresa encontrada. Tente outro nicho ou região."}</p>}
           {result.existing.length ? (
             <details className="border-t border-line">
               <summary className="cursor-pointer px-4 py-3 text-xs text-zinc-500">Já cadastrados (não alterados)</summary>

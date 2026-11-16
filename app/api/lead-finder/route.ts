@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { FINDER_SERVICES, leadFromMlStore, leadFromPlace, type FinderLead, type PlaceInfo } from "@/features/lead-finder/build-lead";
-import { groupMercadoLivreResults, nameMatch } from "@/features/lead-finder/parsing";
+import { groupMercadoLivreResults, nameMatch, type MlStore } from "@/features/lead-finder/parsing";
 import { accessErrorResponse, requireOrganizationAccess } from "@/lib/auth/server-access";
-import { mapsSearch, serpapiConfigured, webSearch } from "@/lib/integrations/serpapi";
+import { defaultEngine, mapsSearch, serpapiConfigured, webSearch, type SearchEngine } from "@/lib/integrations/serpapi";
 import { fetchSiteContacts } from "@/lib/integrations/site-contacts";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 
@@ -20,6 +20,10 @@ const schema = z.object({
   if (value.service === "Outro" && !value.serviceDetail) ctx.addIssue({ code: "custom", path: ["serviceDetail"], message: "Especifique o serviço em “Outro”." });
   if (value.service !== "Loja no Mercado Livre" && value.region.length < 2) ctx.addIssue({ code: "custom", path: ["region"], message: "Informe a cidade ou região." });
 });
+type Input = z.infer<typeof schema>;
+
+/** O que aconteceu na busca, para explicar um resultado vazio e para o histórico. */
+type Diagnostics = { engine?: SearchEngine | "google_maps"; query?: string; rawResults: number; candidates: number; note?: string };
 
 /** Executa tarefas com no máximo `limit` ao mesmo tempo. */
 async function pool<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>) {
@@ -31,18 +35,36 @@ async function pool<T, R>(items: T[], limit: number, task: (item: T) => Promise<
   return results;
 }
 
-async function findLocalBusinesses(input: z.infer<typeof schema>) {
+async function findLocalBusinesses(input: Input, diagnostics: Diagnostics) {
+  const query = `${input.niche} em ${input.region}`;
   // Busca mais do que o pedido para compensar o filtro de site.
-  const places = await mapsSearch(`${input.niche} em ${input.region}`, Math.min(60, input.websiteFilter === "all" ? input.quantity : input.quantity * 2));
+  const places = await mapsSearch(query, Math.min(60, input.websiteFilter === "all" ? input.quantity : input.quantity * 2));
   const filtered = places.filter((place) => input.websiteFilter === "all" || (input.websiteFilter === "with" ? Boolean(place.website) : !place.website)).slice(0, input.quantity);
+  Object.assign(diagnostics, { engine: "google_maps", query, rawResults: places.length, candidates: filtered.length });
+  if (!places.length) diagnostics.note = "O Google Maps não retornou empresas para esse nicho e região.";
+  else if (!filtered.length) diagnostics.note = `O Google Maps retornou ${places.length} empresas, mas nenhuma passou no filtro de site.`;
   return pool(filtered, 5, async (place) => leadFromPlace(place, await fetchSiteContacts(place.website), input));
 }
 
-async function findMercadoLivreStores(input: z.infer<typeof schema>) {
-  const query = `site:mercadolivre.com.br/loja ${input.niche} ${input.region}`.replace(/\s+/g, " ").trim();
-  const organic = await webSearch(query, Math.min(30, Math.max(10, input.quantity * 2)));
-  const stores = groupMercadoLivreResults(organic).slice(0, Math.min(input.quantity, 20));
-  return pool(stores, 4, async (store) => {
+async function findMercadoLivreStores(input: Input, diagnostics: Diagnostics) {
+  // A região não entra na pesquisa web (o Google ignora e reduz os resultados); ela é usada
+  // para encontrar o contato da loja no Google Maps.
+  const query = `site:mercadolivre.com.br/loja ${input.niche}`.replace(/\s+/g, " ").trim();
+  const limit = Math.min(30, Math.max(10, input.quantity * 2));
+  const first = defaultEngine();
+  let engine: SearchEngine = first;
+  let organic = await webSearch(query, limit, engine);
+  let stores: MlStore[] = groupMercadoLivreResults(organic);
+  if (!stores.length) {
+    // Reserva: o outro motor (os motores mudam o suporte ao operador site: sem aviso).
+    engine = first === "google" ? "bing" : "google";
+    organic = await webSearch(query, limit, engine);
+    stores = groupMercadoLivreResults(organic);
+  }
+  Object.assign(diagnostics, { engine, query, rawResults: organic.length, candidates: stores.length });
+  if (!organic.length) diagnostics.note = "A pesquisa web não retornou resultados para esse nicho.";
+  else if (!stores.length) diagnostics.note = `A pesquisa web retornou ${organic.length} resultados, mas nenhum era página de loja do Mercado Livre. Tente palavras mais genéricas.`;
+  return pool(stores.slice(0, Math.min(input.quantity, 20)), 4, async (store) => {
     // 1 crédito por loja: procura a mesma empresa no Google Maps e só aceita se o nome conferir.
     let place: PlaceInfo | null = null;
     try {
@@ -55,25 +77,19 @@ async function findMercadoLivreStores(input: z.infer<typeof schema>) {
 
 export async function POST(request: Request) {
   let jobId: string | null = null;
-  let reserved = 0;
-  let organizationId: string | null = null;
-  let userId: string | null = null;
   try {
     const access = await requireOrganizationAccess();
-    organizationId = access.organizationId;
-    userId = access.user.id;
     const input = schema.parse(await request.json());
     if (!serpapiConfigured()) return Response.json({ error: "A busca automática não está configurada. Cadastre SERPAPI_API_KEY nas variáveis de ambiente." }, { status: 503 });
 
     const { error: rateError } = await access.supabase.rpc("check_api_rate_limit", { target_organization_id: access.organizationId, requested_action: "generate_prospecting" });
     if (rateError) return Response.json({ error: "Muitas buscas em pouco tempo. Aguarde um minuto e tente novamente." }, { status: 429 });
 
-    const { error: quotaError } = await access.supabase.rpc("reserve_prospecting_credits", { target_organization_id: access.organizationId, requested: input.quantity });
-    if (quotaError) {
-      const message = quotaError.message.includes("PLAN_REQUIRED") ? "Seu plano não inclui busca automática de leads." : quotaError.message.includes("QUOTA_EXCEEDED") ? "O limite mensal de buscas do plano foi atingido." : "Não foi possível reservar os créditos da busca.";
-      return Response.json({ error: message }, { status: 402 });
-    }
-    reserved = input.quantity;
+    // Confere o saldo antes de gastar a SerpApi; a cobrança acontece só pelos leads novos.
+    const { data: usage, error: usageError } = await access.supabase.rpc("prospecting_usage", { target_organization_id: access.organizationId });
+    const balance = (Array.isArray(usage) ? usage[0] : usage) as { monthly_limit?: number; remaining?: number } | null;
+    if (usageError || !balance || !balance.monthly_limit) return Response.json({ error: "Seu plano não inclui busca automática de leads." }, { status: 402 });
+    if ((balance.remaining ?? 0) < 1) return Response.json({ error: "O limite mensal de buscas do plano foi atingido." }, { status: 402 });
 
     const { data: job, error: jobError } = await access.supabase.from("prospecting_jobs").insert({
       organization_id: access.organizationId,
@@ -88,44 +104,52 @@ export async function POST(request: Request) {
     if (jobError) throw jobError;
     jobId = job.id;
 
-    const found: FinderLead[] = input.service === "Loja no Mercado Livre" ? await findMercadoLivreStores(input) : await findLocalBusinesses(input);
+    const diagnostics: Diagnostics = { rawResults: 0, candidates: 0 };
+    const found: FinderLead[] = input.service === "Loja no Mercado Livre" ? await findMercadoLivreStores(input, diagnostics) : await findLocalBusinesses(input, diagnostics);
     const unique = [...new Map(found.map((lead) => [lead.import_key, lead])).values()];
-    const rows = unique.map((lead) => ({ ...lead, organization_id: access.organizationId, responsible_user: access.user.id, prospecting_job_id: job.id }));
 
     // Leads já cadastrados não são alterados (etapa, notas e mensagem preservadas).
-    const { data: inserted, error: insertError } = rows.length
-      ? await access.supabase.from("leads").upsert(rows, { onConflict: "organization_id,import_key", ignoreDuplicates: true }).select("id,company_name,import_key")
+    const keys = unique.map((lead) => lead.import_key);
+    const { data: existing, error: existingError } = keys.length
+      ? await access.supabase.from("leads").select("id,company_name,import_key").eq("organization_id", access.organizationId).in("import_key", keys)
       : { data: [], error: null };
-    if (insertError) throw insertError;
-    const insertedKeys = new Set((inserted || []).map((row) => row.import_key));
-    const duplicateKeys = rows.filter((row) => !insertedKeys.has(row.import_key)).map((row) => row.import_key);
-    const { data: existing } = duplicateKeys.length
-      ? await access.supabase.from("leads").select("id,company_name,import_key").eq("organization_id", access.organizationId).in("import_key", duplicateKeys)
-      : { data: [] };
+    if (existingError) throw existingError;
+    const existingKeys = new Set((existing || []).map((row) => row.import_key));
+    const fresh = unique.filter((lead) => !existingKeys.has(lead.import_key)).slice(0, Math.max(0, balance.remaining ?? 0));
 
-    await access.supabase.from("prospecting_jobs").update({ status: "completed", generated_quantity: inserted?.length || 0, completed_at: new Date().toISOString() }).eq("id", job.id);
+    let inserted: Array<{ id: string; company_name: string; import_key: string }> = [];
+    if (fresh.length) {
+      const { error: quotaError } = await access.supabase.rpc("reserve_prospecting_credits", { target_organization_id: access.organizationId, requested: fresh.length });
+      if (quotaError) return Response.json({ error: quotaError.message.includes("QUOTA_EXCEEDED") ? "O limite mensal de buscas do plano foi atingido." : "Não foi possível reservar os créditos da busca." }, { status: 402 });
+      const rows = fresh.map((lead) => ({ ...lead, organization_id: access.organizationId, responsible_user: access.user.id, prospecting_job_id: job.id }));
+      const { data, error } = await access.supabase.from("leads").upsert(rows, { onConflict: "organization_id,import_key", ignoreDuplicates: true }).select("id,company_name,import_key");
+      if (error) throw error;
+      inserted = data || [];
+    }
 
-    const refund = Math.max(0, input.quantity - (inserted?.length || 0));
+    await access.supabase.from("prospecting_jobs").update({
+      status: "completed",
+      generated_quantity: inserted.length,
+      completed_at: new Date().toISOString(),
+      filters: { service: input.service, serviceDetail: input.serviceDetail, website: input.websiteFilter, diagnostics },
+    }).eq("id", job.id);
     try {
-      const admin = createAdminSupabase();
-      if (refund) await admin.from("usage_events").insert({ organization_id: access.organizationId, user_id: access.user.id, metric: "prospecting_credit", quantity: -refund, reference_id: job.id, metadata: { state: "adjusted_to_imported_quantity" } });
-      await admin.from("audit_logs").insert({ organization_id: access.organizationId, user_id: access.user.id, action: "lead_finder.completed", entity_type: "prospecting_job", entity_id: job.id, metadata: { service: input.service, found: found.length, imported: inserted?.length || 0 } });
-    } catch { /* registro administrativo indisponível não invalida a busca */ }
+      await createAdminSupabase().from("audit_logs").insert({ organization_id: access.organizationId, user_id: access.user.id, action: "lead_finder.completed", entity_type: "prospecting_job", entity_id: job.id, metadata: { service: input.service, found: found.length, imported: inserted.length, diagnostics } });
+    } catch { /* auditoria opcional (exige SUPABASE_SERVICE_ROLE_KEY) */ }
 
-    const byKey = new Map(rows.map((row) => [row.import_key, row]));
+    const byKey = new Map(unique.map((lead) => [lead.import_key, lead]));
     const summarize = (row: { id: string; company_name: string; import_key: string }) => {
       const lead = byKey.get(row.import_key);
       return { id: row.id, company_name: row.company_name, city: lead?.city || null, state: lead?.state || null, phone: lead?.phone || null, whatsapp: lead?.whatsapp || null, whatsapp_confirmed: lead?.whatsapp_confirmed || false, website: lead?.website || null, marketplace_url: lead?.marketplace_url || null, marketplace_listings: lead?.marketplace_listings ?? null };
     };
-    return Response.json({ jobId: job.id, found: found.length, imported: (inserted || []).map(summarize), existing: (existing || []).map(summarize) });
+    return Response.json({ jobId: job.id, found: found.length, imported: inserted.map(summarize), existing: (existing || []).map(summarize), diagnostics });
   } catch (error) {
-    try {
-      if (organizationId && (jobId || reserved)) {
-        const admin = createAdminSupabase();
-        if (jobId) await admin.from("prospecting_jobs").update({ status: "failed", error_message: error instanceof Error ? error.message.slice(0, 300) : "Falha na busca", completed_at: new Date().toISOString() }).eq("id", jobId);
-        if (reserved) await admin.from("usage_events").insert({ organization_id: organizationId, user_id: userId, metric: "prospecting_credit", quantity: -reserved, reference_id: jobId, metadata: { state: "refunded_after_failure" } });
-      }
-    } catch { /* preserva o erro original */ }
+    if (jobId) {
+      try {
+        const access = await requireOrganizationAccess();
+        await access.supabase.from("prospecting_jobs").update({ status: "failed", error_message: error instanceof Error ? error.message.slice(0, 300) : "Falha na busca", completed_at: new Date().toISOString() }).eq("id", jobId);
+      } catch { /* preserva o erro original */ }
+    }
     if (error instanceof z.ZodError) return Response.json({ error: error.issues[0]?.message || "Dados inválidos" }, { status: 400 });
     if (error instanceof Error && error.message.startsWith("SERPAPI:")) return Response.json({ error: `A busca externa falhou: ${error.message.slice(9, 200)}` }, { status: 502 });
     return accessErrorResponse(error);

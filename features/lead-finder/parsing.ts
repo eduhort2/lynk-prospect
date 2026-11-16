@@ -42,6 +42,19 @@ export function mlStoreIdFromUrl(url: string | null | undefined) {
   } catch { return null; }
 }
 
+/** Link da loja sem parâmetros de rastreio (?item_id=...&recos_listing=...). */
+export function cleanStoreUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (!/mercadoli[vb]re\.com/i.test(parsed.hostname)) return url;
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    if (segments[0] === "loja" && segments[1]) return `https://www.mercadolivre.com.br/loja/${segments[1]}`;
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString();
+  } catch { return url; }
+}
+
 function cleanTitle(title: string) {
   return title
     .replace(/\s*[|\-–]\s*[\w.]*mercadoli[vb]re\.com(\.br)?\s*$/i, "")
@@ -88,7 +101,7 @@ export function groupMercadoLivreResults(results: OrganicResult[]): MlStore[] {
     let reason: string;
     if (storeId) {
       key = `ml:${storeId}`;
-      name = cleanTitle(result.title) || storeId.split(":")[1];
+      name = cleanTitle(result.title).replace(/\s*\|\s*Loja Oficial\s*$/i, "").trim() || storeId.split(":")[1];
       presence = "confirmada";
       reason = "Página de loja/perfil do vendedor no Mercado Livre.";
     } else {
@@ -112,11 +125,12 @@ export function groupMercadoLivreResults(results: OrganicResult[]): MlStore[] {
     if (normalized && byName.has(normalized) && !groups.has(key)) key = byName.get(normalized)!;
     const current = groups.get(key);
     const listings = listingsFromText(text);
+    const url = cleanStoreUrl(result.link);
     if (!current) {
       if (normalized) byName.set(normalized, key);
-      groups.set(key, { key, name, storeId, url: result.link, presence, reason, snippet: result.snippet, listings });
+      groups.set(key, { key, name, storeId, url, presence, reason, snippet: result.snippet, listings });
     } else {
-      if (current.presence === "a_validar" && presence === "confirmada") Object.assign(current, { presence, reason, url: result.link, storeId: storeId ?? current.storeId });
+      if (current.presence === "a_validar" && presence === "confirmada") Object.assign(current, { presence, reason, url, storeId: storeId ?? current.storeId });
       if (current.listings === null && listings !== null) current.listings = listings;
     }
   }
