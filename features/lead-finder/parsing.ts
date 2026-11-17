@@ -11,6 +11,32 @@ const NON_COMPANY_DOMAINS = [
   "linktr.ee", "youtube.com", "tiktok.com", "shopee.com.br", "amazon.com.br", "magazineluiza.com.br", "google.com", "linkedin.com",
 ];
 
+const stripAccents = (value: string) => value.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/**
+ * Endereço real de um resultado orgânico. Desde 17/11/2026 a SerpApi (Google) passou a devolver
+ * `link` como redirecionamento do Google (google.com.br/goto?url=... ou /url?...). Nesse caso o
+ * endereço é reconstruído a partir de `displayed_link` ("https://www.mercadolivre.com.br › loja › quibao").
+ * Trilhas cortadas ("…") não são usadas, para não gerar link errado.
+ */
+export function realLinkFromOrganic(item: { link?: string | null; displayed_link?: string | null }) {
+  const link = (item.link || "").trim();
+  const isGoogleRedirect = /^https?:\/\/(www\.)?google\.[a-z.]+\/(goto|url)\b/i.test(link);
+  if (link && !isGoogleRedirect) return link;
+  if (isGoogleRedirect) {
+    try {
+      const target = new URL(link).searchParams.get("q") || new URL(link).searchParams.get("url");
+      if (target && /^https?:\/\//i.test(target)) return target;
+    } catch { /* segue para displayed_link */ }
+  }
+  const shown = (item.displayed_link || "").trim();
+  if (!shown || shown.includes("…") || shown.includes("...")) return null;
+  const parts = shown.split("›").map((part) => part.trim()).filter(Boolean);
+  if (!parts.length) return null;
+  const base = /^https?:\/\//i.test(parts[0]) ? parts[0] : `https://${parts[0]}`;
+  return [base.replace(/\/$/, ""), ...parts.slice(1).map((part) => encodeURIComponent(stripAccents(part).replace(/\s+/g, "-")))].join("/");
+}
+
 export function hostOf(url: string | null | undefined) {
   if (!url) return null;
   try { return new URL(/^https?:/i.test(url) ? url : `https://${url}`).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
@@ -35,8 +61,11 @@ export function mlStoreIdFromUrl(url: string | null | undefined) {
     const host = parsed.hostname.toLowerCase();
     if (!host.endsWith("mercadolivre.com.br")) return null;
     const segments = parsed.pathname.split("/").filter(Boolean);
-    if (segments[0] === "loja" && segments[1]) return `loja:${decodeURIComponent(segments[1]).toLowerCase()}`;
-    if (host.startsWith("perfil.") && segments[0]) return `perfil:${decodeURIComponent(segments[0]).toLowerCase()}`;
+    const slug = (value: string) => stripAccents(decodeURIComponent(value)).toLowerCase();
+    if (segments[0] === "loja" && segments[1]) return `loja:${slug(segments[1])}`;
+    // Formato novo: loja.mercadolivre.com.br/{slug}
+    if (host.startsWith("loja.") && segments[0]) return `loja:${slug(segments[0])}`;
+    if (host.startsWith("perfil.") && segments[0]) return `perfil:${slug(segments[0])}`;
     const customer = parsed.pathname.match(/_CustId_(\d+)/i);
     return customer ? `custid:${customer[1]}` : null;
   } catch { return null; }
@@ -48,7 +77,9 @@ export function cleanStoreUrl(url: string) {
     const parsed = new URL(url);
     if (!/mercadoli[vb]re\.com/i.test(parsed.hostname)) return url;
     const segments = parsed.pathname.split("/").filter(Boolean);
-    if (segments[0] === "loja" && segments[1]) return `https://www.mercadolivre.com.br/loja/${segments[1]}`;
+    const slug = (value: string) => encodeURIComponent(stripAccents(decodeURIComponent(value)).toLowerCase());
+    if (segments[0] === "loja" && segments[1]) return `https://www.mercadolivre.com.br/loja/${slug(segments[1])}`;
+    if (parsed.hostname.toLowerCase().startsWith("loja.") && segments[0]) return `https://www.mercadolivre.com.br/loja/${slug(segments[0])}`;
     parsed.search = "";
     parsed.hash = "";
     return parsed.toString();

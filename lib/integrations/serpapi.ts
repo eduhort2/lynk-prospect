@@ -1,5 +1,7 @@
 import "server-only";
 
+import { realLinkFromOrganic } from "@/features/lead-finder/parsing";
+
 /**
  * SerpApi (mesmo provedor do Lynk CRM). A chave fica só no servidor (SERPAPI_API_KEY).
  * Cada página de resultados consome 1 crédito da SerpApi.
@@ -40,6 +42,18 @@ async function call(params: Record<string, string>) {
   return json as Record<string, unknown> & { empty?: boolean };
 }
 
+/** Segue um redirecionamento do Google (só hosts google.*) e devolve o destino, sem abrir o destino. */
+async function followGoogleRedirect(link: string | undefined) {
+  if (!link || !/^https:\/\/(www\.)?google\.[a-z.]+\/(goto|url)\b/i.test(link)) return null;
+  try {
+    const response = await fetch(link, { redirect: "manual", signal: AbortSignal.timeout(5_000), headers: { "user-agent": "Mozilla/5.0 (compatible; LynkProspect/3.2)" } });
+    const location = response.headers.get("location");
+    return location && /^https?:\/\//i.test(location) ? location : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Pesquisa web. Google é o padrão: em 16/11/2026 o Bing via SerpApi passou a ignorar
  * "site:mercadolivre.com.br/loja" (devolvia páginas sem relação), e o Google voltou a respeitar.
@@ -56,7 +70,14 @@ export async function webSearch(query: string, limit: number, engine: SearchEngi
       ? { engine: "bing", q: query, cc: "BR", mkt: "pt-BR", count: "10", first: String(start + 1) }
       : { engine: "google", q: query, google_domain: "google.com.br", gl: "br", hl: "pt-br", num: "10", start: String(start), nfpr: "1" };
     const json = await call(params);
-    const page = ((json.organic_results as Array<Record<string, string>> | undefined) || []).map((item) => ({ title: item.title || "", link: item.link || "", snippet: item.snippet || "" })).filter((item) => item.link);
+    // O Google pode devolver `link` como redirecionamento; o endereço real vem de `displayed_link`
+    // ou, quando a trilha exibida vem cortada ("…"), do próprio redirecionamento (sem custo de API).
+    const items = (json.organic_results as Array<Record<string, string>> | undefined) || [];
+    const page = (await Promise.all(items.map(async (item) => ({
+      title: item.title || "",
+      link: realLinkFromOrganic(item) || (await followGoogleRedirect(item.link)) || "",
+      snippet: item.snippet || "",
+    })))).filter((item) => item.link);
     out.push(...page);
     if (json.empty || page.length < 10 || !json.serpapi_pagination) break;
   }

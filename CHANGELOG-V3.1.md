@@ -1,5 +1,23 @@
 # LYNK Prospect v3.1 (versão enxuta)
 
+## Atualização v3.3 — contato em um clique e foco em quem dá para chamar
+
+- **Abrir conversa já move para Contatado:** clicar em WhatsApp (confirmado ou "a confirmar") ou Instagram, na lista ou na ficha, abre a conversa e muda a etapa de **Novo para Contatado**, registrando a data do contato. Leads em etapa mais avançada mantêm a etapa. O "Marcar como contatado" continua para contatos por telefone ou e-mail.
+- **Instagram:** novo botão "Abrir Instagram", que abre o Direct (`ig.me/m/usuário`). Como o Instagram não aceita mensagem pré-preenchida, a mensagem é copiada para você colar.
+- **Lista de Leads abre em "Com WhatsApp ou Instagram":** mostra só quem tem WhatsApp confirmado, link oficial de WhatsApp ou Instagram, celular (provável WhatsApp) ou Instagram. Telefone fixo sozinho não conta. O seletor "Todos os leads" mostra o resto.
+- **Buscar leads:** nova opção "Só com WhatsApp ou Instagram", ligada por padrão. Empresas sem esses canais não viram lead e não gastam créditos. A busca local procura mais empresas para compensar o filtro.
+- **Migração `008_message_channel.sql`** (aditiva): coluna `has_message_channel`, **calculada pelo próprio banco** a partir dos campos existentes, e um índice. Precisa ser aplicada **antes** de publicar este código.
+
+## Atualização v3.2.2 — ML ainda voltando 0 + criação de usuários
+
+- **Causa:** desde 17/11/2026, a SerpApi (Google) devolve o `link` dos resultados como redirecionamento do Google (`google.com.br/goto?url=...`), e não como endereço do Mercado Livre. As lojas vinham na pesquisa, mas eram descartadas.
+- **Correção:**
+  - O endereço real é lido de `displayed_link` ("https://www.mercadolivre.com.br › loja › quibao").
+  - Quando essa trilha vem cortada ("…"), o sistema segue o próprio redirecionamento do Google, só em hosts `google.*`, com prazo de 5 s e sem custo de API.
+  - Passa a reconhecer também o formato novo `loja.mercadolivre.com.br/{loja}`, com o mesmo identificador do formato antigo, então não gera duplicados.
+- **Teste real (SerpApi):** "moda" passou de 0 para 8 lojas confirmadas (Moda Barata, Ponto da Moda, Maramiss, CVL Moda Praia, Musa Moda...).
+- **Criação de usuários (produção):** a função do banco que roda ao criar conta era uma versão antiga que deixava `profiles.name` vazio, e todo cadastro falhava. Ela foi corrigida pela migração `007_fix_new_user_trigger.sql`, já aplicada em produção. A tela de login agora mostra um erro compreensível em vez de "{}".
+
 ## Atualização v3.2.1 — busca do ML voltando 0
 
 - **Causa:** em 16/11/2026, o Bing via SerpApi passou a ignorar `site:mercadolivre.com.br/loja` e devolvia páginas sem relação ou nada. As buscas do ML terminavam com 0 encontrados.

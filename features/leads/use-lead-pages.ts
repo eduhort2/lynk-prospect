@@ -41,6 +41,8 @@ export type LeadPageParams = {
   search: string;
   stage: StageStatus | "";
   service: string;
+  /** "messageable" = só leads com WhatsApp (confirmado ou celular) ou Instagram (coluna has_message_channel). */
+  channel?: "messageable" | "all";
   page: number;
   pageSize: PageSize;
 };
@@ -65,6 +67,7 @@ export function useLeadsPage(params: LeadPageParams) {
       const pattern = searchPattern(params.search);
       if (pattern) query = query.or(SEARCH_COLUMNS.map((column) => `${column}.ilike.${pattern}`).join(","));
       if (params.stage) query = query.in("status", statusesOfStage(params.stage));
+      if (params.channel === "messageable") query = query.eq("has_message_channel", true);
       if (params.service === "none") query = query.is("suggested_service", null);
       else if (params.service) query = query.eq("suggested_service", params.service);
       const { data, error, count } = await query

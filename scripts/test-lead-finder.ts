@@ -3,9 +3,9 @@
  */
 import assert from "node:assert/strict";
 import { leadFromMlStore, leadFromPlace } from "@/features/lead-finder/build-lead";
-import { extractSiteContacts, groupMercadoLivreResults, listingsFromText, mlStoreIdFromUrl, nameMatch, parseBrazilAddress } from "@/features/lead-finder/parsing";
+import { extractSiteContacts, groupMercadoLivreResults, listingsFromText, mlStoreIdFromUrl, nameMatch, parseBrazilAddress, realLinkFromOrganic } from "@/features/lead-finder/parsing";
 import { isMobileBR, normPhoneBR } from "@/features/leads/phone";
-import { getProbableWhatsApp, getWhatsAppTarget } from "@/features/leads/whatsapp-link";
+import { getInstagramTarget, getProbableWhatsApp, getWhatsAppTarget, hasMessageChannel } from "@/features/leads/whatsapp-link";
 
 let passed = 0;
 function test(name: string, fn: () => void) { fn(); passed += 1; console.log(`✔ ${name}`); }
@@ -52,6 +52,23 @@ test("Mercado Livre: formato real do Google (16/11/2026) — títulos, links com
   assert.deepEqual(stores.map((store) => store.name), ["Auto Peças Gisela", "Blumax Autopeças", "Quibao Auto Peças Linha Pesada - Capivari"]);
   assert.equal(stores[1].url, "https://www.mercadolivre.com.br/loja/blumax-autopecas", "link limpo, sem rastreio");
   assert.ok(stores.every((store) => store.presence === "confirmada"));
+});
+
+test("Google com link embrulhado (17/11/2026): endereço real vem de displayed_link", () => {
+  const goto = "https://www.google.com.br/goto?url=CAESdQHEIkXXTEYqMO6m5tHoev57NQRL9EVCbjp61xqg";
+  assert.equal(realLinkFromOrganic({ link: goto, displayed_link: "https://loja.mercadolivre.com.br › circular-autopeças" }), "https://loja.mercadolivre.com.br/circular-autopecas");
+  assert.equal(realLinkFromOrganic({ link: goto, displayed_link: "https://www.mercadolivre.com.br › loja › quibao" }), "https://www.mercadolivre.com.br/loja/quibao");
+  assert.equal(realLinkFromOrganic({ link: goto, displayed_link: "https://www.mercadolivre.com.br › loja › auto-pecas-gis…" }), null, "trilha cortada não vira link");
+  assert.equal(realLinkFromOrganic({ link: "https://www.mercadolivre.com.br/loja/blumax-autopecas", displayed_link: "x" }), "https://www.mercadolivre.com.br/loja/blumax-autopecas", "link direto continua valendo");
+  assert.equal(mlStoreIdFromUrl("https://loja.mercadolivre.com.br/circular-autopecas"), "loja:circular-autopecas", "mesmo id do formato antigo (não duplica)");
+  const stores = groupMercadoLivreResults([
+    { title: "CIRCULAR AUTOPEÇAS", link: realLinkFromOrganic({ link: goto, displayed_link: "https://loja.mercadolivre.com.br › circular-autopeças" })!, snippet: "3M por CIRCULAR AUTOPEÇAS 4.8" },
+    { title: "Quibao Auto Peças Linha Pesada - Capivari", link: realLinkFromOrganic({ link: goto, displayed_link: "https://www.mercadolivre.com.br › loja › quibao" })!, snippet: "Peças para caminhões" },
+  ]);
+  assert.deepEqual(stores.map((store) => [store.name, store.url, store.storeId]), [
+    ["CIRCULAR AUTOPEÇAS", "https://www.mercadolivre.com.br/loja/circular-autopecas", "loja:circular-autopecas"],
+    ["Quibao Auto Peças Linha Pesada - Capivari", "https://www.mercadolivre.com.br/loja/quibao", "loja:quibao"],
+  ]);
 });
 
 test("conferência de nome exige as palavras distintivas", () => {
@@ -130,6 +147,24 @@ test("loja do ML: link da loja, nicho, anúncios e contato do Google Maps", () =
   const noContact = leadFromMlStore({ ...store, listings: null }, null, EMPTY_SITE, { service: "Loja no Mercado Livre", niche: "autopeças", region: "" });
   assert.equal(noContact.whatsapp, null);
   assert.match(noContact.differentiators, /anúncios a conferir/);
+});
+
+test("Instagram: usuário a partir de URL, @ ou link de contato; Direct via ig.me", () => {
+  assert.equal(getInstagramTarget({ instagram: "https://www.instagram.com/padaria.aurora/", contact_link: null })?.url, "https://ig.me/m/padaria.aurora");
+  assert.equal(getInstagramTarget({ instagram: "@moda_barata", contact_link: null })?.handle, "moda_barata");
+  assert.equal(getInstagramTarget({ instagram: null, contact_link: "https://instagram.com/loja.x" })?.handle, "loja.x");
+  assert.equal(getInstagramTarget({ instagram: "https://www.instagram.com/p/ABC123/", contact_link: null }), null, "post não é perfil");
+  assert.equal(getInstagramTarget({ instagram: null, contact_link: "https://wa.me/5541999990000" }), null);
+});
+
+test("tem canal de mensagem = WhatsApp (confirmado/celular/link) ou Instagram; fixo sozinho não", () => {
+  const base = { whatsapp: null, whatsapp_confirmed: false, contact_link: null, phone: null, instagram: null };
+  assert.equal(hasMessageChannel(base), false);
+  assert.equal(hasMessageChannel({ ...base, phone: "(41) 3333-2222" }), false, "fixo");
+  assert.equal(hasMessageChannel({ ...base, phone: "(41) 99777-0101" }), true, "celular");
+  assert.equal(hasMessageChannel({ ...base, whatsapp: "(41) 3024-8584", whatsapp_confirmed: true }), true, "WhatsApp confirmado (até fixo com WhatsApp Business)");
+  assert.equal(hasMessageChannel({ ...base, contact_link: "https://wa.me/5541999990001" }), true);
+  assert.equal(hasMessageChannel({ ...base, instagram: "@empresa" }), true);
 });
 
 console.log(`\n${passed} testes passaram.`);

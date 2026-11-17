@@ -95,6 +95,29 @@ export function getProbableWhatsApp(
   return { url: `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`, number };
 }
 
+/** Usuário do Instagram a partir do campo Instagram (URL ou @) ou do link oficial de contato. */
+export function instagramHandle(lead: Pick<Lead, "instagram" | "contact_link">) {
+  for (const value of [lead.instagram, lead.contact_link]) {
+    const text = (value || "").trim();
+    if (!text) continue;
+    const fromUrl = text.match(/(?:instagram\.com|ig\.me\/m)\/([A-Za-z0-9_.]{1,30})/i);
+    if (fromUrl && !["p", "reel", "reels", "explore", "stories", "accounts"].includes(fromUrl[1].toLowerCase())) return fromUrl[1];
+    if (value === lead.instagram && /^@?[A-Za-z0-9_.]{1,30}$/.test(text)) return text.replace(/^@/, "");
+  }
+  return null;
+}
+
+/** Abre a conversa direta (Direct) do Instagram. O Instagram não aceita texto pré-preenchido. */
+export function getInstagramTarget(lead: Pick<Lead, "instagram" | "contact_link">) {
+  const handle = instagramHandle(lead);
+  return handle ? { url: `https://ig.me/m/${handle}`, handle } : null;
+}
+
+/** Mesmo critério da coluna has_message_channel (migração 008): WhatsApp (confirmado ou celular) ou Instagram. */
+export function hasMessageChannel(lead: Pick<Lead, "whatsapp" | "whatsapp_confirmed" | "contact_link" | "phone" | "instagram">) {
+  return Boolean(getWhatsAppTarget(lead) || getProbableWhatsApp(lead) || getInstagramTarget(lead));
+}
+
 export function hasWhatsApp(lead: Pick<Lead, "whatsapp" | "whatsapp_confirmed" | "contact_link">) {
   return Boolean(getWhatsAppTarget(lead));
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { addDays, format, setHours, setMinutes } from "date-fns";
-import { CalendarClock, Check, CheckCheck, Copy, ExternalLink, Globe, Link2, Mail, MessageCircle, Pencil, Phone, X } from "lucide-react";
+import { CalendarClock, Check, CheckCheck, Copy, ExternalLink, Globe, Instagram, Link2, Mail, MessageCircle, Pencil, Phone, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,8 @@ import { followUpBucket, useScheduleFollowUp } from "./follow-ups";
 import { StageOptions } from "./stage-options";
 import { stageInfo, stageLabel, stageOf } from "./stages";
 import { useUpdateLead } from "./use-leads";
-import { getOtherContactLink, getProbableWhatsApp, getWhatsAppTarget } from "./whatsapp-link";
+import { useContactLead, type ContactChannel } from "./use-contact-lead";
+import { getInstagramTarget, getOtherContactLink, getProbableWhatsApp, getWhatsAppTarget } from "./whatsapp-link";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Tente novamente.";
@@ -66,6 +67,8 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
   // O link é gerado com o texto que está na tela agora, inclusive se acabou de ser editado.
   const whatsapp = getWhatsAppTarget(lead, message);
   const probable = getProbableWhatsApp(lead, message);
+  const instagram = getInstagramTarget(lead);
+  const contactLead = useContactLead();
   const otherLink = getOtherContactLink(lead);
   const messageDirty = message.trim() !== (lead.message || "").trim();
   const notesDirty = notes.trim() !== (lead.observations || "").trim();
@@ -93,17 +96,9 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
     } catch (error) { toast.error("Não foi possível confirmar", { description: errorMessage(error) }); }
   }
 
-  async function openWhatsApp(target: { url: string; messageIncluded?: boolean } | null = whatsapp) {
-    if (!target) return;
-    // Abre primeiro (no mesmo clique) para não ser bloqueado como pop-up. A etapa não muda.
-    window.open(target.url, "_blank", "noopener,noreferrer");
-    if (target.messageIncluded === false && message.trim()) {
-      try { await navigator.clipboard.writeText(message); } catch { /* sem permissão de cópia */ }
-      toast.info("Este link não aceita texto automático. A mensagem foi copiada para colar na conversa.");
-    } else {
-      toast.success("Conversa aberta no WhatsApp", { description: "Depois de enviar, use “Marcar como contatado”." });
-    }
-    if (messageDirty) await saveMessage(true);
+  // Abre a conversa com a mensagem que está na tela e já move o lead para "Contatado".
+  function openChannel(channel: ContactChannel) {
+    void contactLead.contact(lead, channel, message);
   }
 
   async function markContacted() {
@@ -158,8 +153,9 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
           {lead.contacted_at ? <span className="text-xs text-zinc-500">Último contato: {formatDate(lead.contacted_at, true)}</span> : <span className="text-xs text-zinc-600">Sem contato registrado</span>}
         </div>
         <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex">
-          {whatsapp ? <Button onClick={() => openWhatsApp()} className="col-span-2 whitespace-nowrap sm:col-auto"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp</Button> : null}
-          {probable ? <Button variant="outline" onClick={() => openWhatsApp({ url: probable.url })} className="col-span-2 whitespace-nowrap sm:col-auto" title="Celular sem confirmação de WhatsApp"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp (a confirmar)</Button> : null}
+          {whatsapp ? <Button onClick={() => openChannel("whatsapp")} disabled={contactLead.isPending} className="col-span-2 whitespace-nowrap sm:col-auto"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp</Button> : null}
+          {probable ? <Button variant="outline" onClick={() => openChannel("whatsapp_probable")} disabled={contactLead.isPending} className="col-span-2 whitespace-nowrap sm:col-auto" title="Celular sem confirmação de WhatsApp"><MessageCircle className="h-4 w-4" /> Abrir WhatsApp (a confirmar)</Button> : null}
+          {instagram ? <Button variant={whatsapp || probable ? "secondary" : "default"} onClick={() => openChannel("instagram")} disabled={contactLead.isPending} className="col-span-2 whitespace-nowrap sm:col-auto" title={`Direct do Instagram @${instagram.handle} (a mensagem é copiada)`}><Instagram className="h-4 w-4" /> Abrir Instagram</Button> : null}
           <Button variant="secondary" onClick={markContacted} disabled={updateLead.isPending} className="whitespace-nowrap px-3"><CheckCheck className="h-4 w-4" /> Marcar como contatado</Button>
           <Button variant="ghost" onClick={onEdit} aria-label="Editar dados"><Pencil className="h-4 w-4" /> <span className="hidden sm:inline">Editar</span></Button>
         </div>
@@ -169,7 +165,8 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
           WhatsApp a confirmar{lead.whatsapp_source ? ` · origem: ${lead.whatsapp_source.replace(/\s*\(.*\)\s*$/, "").toLowerCase()}` : ""}.
           <button type="button" onClick={confirmWhatsApp} disabled={updateLead.isPending} className="text-primary-light underline-offset-2 hover:underline">Marcar como WhatsApp confirmado</button>
         </p>
-      ) : !whatsapp ? <p className="-mt-2 text-xs text-zinc-600">Sem WhatsApp confirmado nem link oficial de WhatsApp. {lead.phone ? "O telefone cadastrado é fixo ou não é celular." : ""}</p> : null}
+      ) : !whatsapp && !instagram ? <p className="-mt-2 text-xs text-zinc-600">Sem WhatsApp nem Instagram. {lead.phone ? "O telefone cadastrado é fixo ou não é celular." : ""}</p> : null}
+      {whatsapp || probable || instagram ? <p className="-mt-2 text-xs text-zinc-600">Ao abrir a conversa, o lead vai para <strong className="font-medium text-zinc-400">Contatado</strong> automaticamente.{instagram ? " No Instagram, a mensagem é copiada para você colar." : ""}</p> : null}
 
       {/* Empresa e canais */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">

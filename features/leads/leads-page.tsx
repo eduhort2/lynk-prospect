@@ -22,7 +22,7 @@ import { LeadDetail } from "./lead-detail";
 import { PIPELINE_STAGES, type StageStatus } from "./stages";
 import { useCreateLead, useDeleteLead, useImportLeads, useUpdateLead } from "./use-leads";
 import { useLead, useLeadCount, useLeadsPage, usePageSize } from "./use-lead-pages";
-import { getWhatsAppTarget } from "./whatsapp-link";
+import { useContactLead, type ContactChannel } from "./use-contact-lead";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Tente novamente.";
@@ -41,6 +41,9 @@ export function LeadsPage() {
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState<StageStatus | "">("");
   const [service, setService] = useState("");
+  // Por padrão a lista mostra só quem dá para chamar por WhatsApp ou Instagram.
+  const [channel, setChannel] = useState<"messageable" | "all">("messageable");
+  const contactLead = useContactLead();
   const [editing, setEditing] = useState<Lead | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
@@ -56,9 +59,9 @@ export function LeadsPage() {
     return () => window.clearTimeout(timer);
   }, [search]);
   // Mudou filtro ou tamanho de página: volta para a primeira página.
-  useEffect(() => { setPage(1); }, [debouncedSearch, stage, service, pageSize]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, stage, service, channel, pageSize]);
 
-  const leadsQuery = useLeadsPage({ search: debouncedSearch, stage, service, page, pageSize });
+  const leadsQuery = useLeadsPage({ search: debouncedSearch, stage, service, channel, page, pageSize });
   const countQuery = useLeadCount();
   const rows = leadsQuery.data?.rows || [];
   const filteredTotal = leadsQuery.data?.total ?? 0;
@@ -80,12 +83,9 @@ export function LeadsPage() {
   function openCreate() { setEditing(null); setFormOpen(true); }
   function openEdit(lead: Lead) { setEditing(lead); setFormOpen(true); }
 
-  /** Atalho da lista: abre com a mensagem salva e NÃO muda a etapa. */
-  function openWhatsApp(lead: Lead) {
-    const target = getWhatsAppTarget(lead, lead.message);
-    if (!target) return;
-    window.open(target.url, "_blank", "noopener,noreferrer");
-    toast.success(`WhatsApp de ${lead.company_name} aberto`, { description: "Depois de enviar, abra a ficha e use “Marcar como contatado”." });
+  /** Atalho da lista: abre a conversa com a mensagem salva e move o lead para "Contatado". */
+  function openConversation(lead: Lead, channel: ContactChannel) {
+    void contactLead.contact(lead, channel);
   }
 
   async function submit(values: LeadFormValues) {
@@ -191,11 +191,12 @@ export function LeadsPage() {
         <div className="flex flex-col gap-3 border-b border-line p-4 md:flex-row">
           <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar empresa, cidade ou contato" className="pl-10" aria-label="Buscar leads" /></div>
           <div className="grid grid-cols-2 gap-2 md:flex">
+            <Select className="col-span-2 md:col-auto md:min-w-52" value={channel} onChange={(event) => setChannel(event.target.value as "messageable" | "all")} aria-label="Filtrar por canal"><option value="messageable">Com WhatsApp ou Instagram</option><option value="all">Todos os leads</option></Select>
             <Select className="md:min-w-44" value={stage} onChange={(event) => setStage(event.target.value as StageStatus | "")} aria-label="Filtrar por etapa"><option value="">Todas as etapas</option>{PIPELINE_STAGES.map((item) => <option key={item.status} value={item.status}>{item.label}</option>)}</Select>
             <Select className="md:min-w-44" value={service} onChange={(event) => setService(event.target.value)} aria-label="Filtrar por serviço"><option value="">Todos os serviços</option>{SUGGESTED_SERVICES.map((item) => <option key={item}>{item}</option>)}<option value="none">Sem serviço</option></Select>
           </div>
         </div>
-        {leadsQuery.isPending ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <div className={leadsQuery.isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}><LeadsTable leads={rows} followUps={followUps.byLead} onOpen={openLead} onWhatsApp={openWhatsApp} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} /></div>}
+        {leadsQuery.isPending ? <div className="flex min-h-64 items-center justify-center text-sm text-muted">Carregando leads...</div> : leadsQuery.isError ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-red-300"><FileSpreadsheet className="h-6 w-6" /> {leadsQuery.error.message}<Button variant="secondary" onClick={() => leadsQuery.refetch()}>Tentar novamente</Button></div> : <div className={leadsQuery.isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}><LeadsTable leads={rows} followUps={followUps.byLead} onOpen={openLead} onContact={openConversation} emptyHint={channel === "messageable" && total ? "Nenhum lead com WhatsApp ou Instagram nestes filtros. Troque para “Todos os leads” para ver os demais." : undefined} onEdit={openEdit} onDelete={setDeleteTarget} onCreate={openCreate} /></div>}
         {!leadsQuery.isLoading && !leadsQuery.isError && (filteredTotal || total) ? <div className="border-t border-line px-4 py-3 sm:px-5"><Pagination page={page} pageSize={pageSize} total={filteredTotal} onPageChange={(next) => { setPage(next); window.scrollTo({ top: 0, behavior: "smooth" }); }} onPageSizeChange={setPageSize} loading={leadsQuery.isFetching} /></div> : null}
         {!leadsQuery.isLoading && total ? <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-5 py-3 text-xs text-zinc-600"><span>{total} leads no total{filteredTotal !== total ? ` · ${filteredTotal} com os filtros atuais` : ""}</span><span className="flex gap-1"><Button variant="ghost" size="sm" className="text-zinc-500" onClick={downloadModel}><Download className="h-3.5 w-3.5" /> Modelo de planilha</Button><Button variant="ghost" size="sm" className="text-zinc-600 hover:text-red-300" onClick={() => setClearOpen(true)}><Trash2 className="h-3.5 w-3.5" /> Limpar leads</Button></span></div> : null}
         {!leadsQuery.isLoading && !total ? <div className="border-t border-line px-5 py-3 text-center text-xs"><Button variant="ghost" size="sm" className="text-zinc-500" onClick={downloadModel}><Download className="h-3.5 w-3.5" /> Baixar modelo de planilha</Button></div> : null}

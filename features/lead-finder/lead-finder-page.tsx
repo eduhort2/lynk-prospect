@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Bot, Boxes, Check, ExternalLink, Globe, Loader2, MessageCircle, PackageSearch, Phone, Search, ShoppingBag, Sparkles, Truck } from "lucide-react";
+import { Bot, Boxes, Check, ExternalLink, Globe, Instagram, Loader2, MessageCircle, PackageSearch, Phone, Search, ShoppingBag, Sparkles, Truck } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import type { FinderService } from "./build-lead";
 
 type ResultLead = {
   id: string; company_name: string; city: string | null; state: string | null; phone: string | null; whatsapp: string | null;
-  whatsapp_confirmed: boolean; website: string | null; marketplace_url: string | null; marketplace_listings: number | null;
+  whatsapp_confirmed: boolean; instagram?: string | null; website: string | null; marketplace_url: string | null; marketplace_listings: number | null;
 };
 type Result = { found: number; imported: ResultLead[]; existing: ResultLead[]; diagnostics?: { rawResults: number; candidates: number; note?: string } };
 
@@ -40,7 +40,8 @@ function ResultRow({ lead }: { lead: ResultLead }) {
           {location ? <span>{location}</span> : null}
           {lead.whatsapp ? <span className={cn("inline-flex items-center gap-1", lead.whatsapp_confirmed ? "text-emerald-300" : "text-amber-300")}><MessageCircle className="h-3 w-3" />{lead.whatsapp} {lead.whatsapp_confirmed ? "· confirmado" : "· provável"}</span> : null}
           {lead.phone && lead.phone !== lead.whatsapp ? <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{lead.phone}</span> : null}
-          {!lead.whatsapp && !lead.phone ? <span className="text-zinc-600">Sem telefone encontrado</span> : null}
+          {lead.instagram ? <span className="inline-flex items-center gap-1 text-pink-300"><Instagram className="h-3 w-3" />@{lead.instagram.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}</span> : null}
+          {!lead.whatsapp && !lead.phone && !lead.instagram ? <span className="text-zinc-600">Sem telefone encontrado</span> : null}
           {lead.website ? <span className="inline-flex items-center gap-1"><Globe className="h-3 w-3" />{lead.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</span> : null}
           {lead.marketplace_url ? <a href={lead.marketplace_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary-light hover:underline"><ExternalLink className="h-3 w-3" />Loja no ML{lead.marketplace_listings !== null ? ` · ${lead.marketplace_listings} anúncios` : ""}</a> : null}
         </div>
@@ -59,6 +60,7 @@ export function LeadFinderPage() {
   const [region, setRegion] = useState("");
   const [quantity, setQuantity] = useState(10);
   const [websiteFilter, setWebsiteFilter] = useState<"all" | "with" | "without">("all");
+  const [onlyWithChannel, setOnlyWithChannel] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const isMl = service === "Loja no Mercado Livre";
@@ -72,7 +74,7 @@ export function LeadFinderPage() {
       const response = await fetch("/api/lead-finder", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ service, serviceDetail, niche, region, quantity, websiteFilter: service === "Site" ? websiteFilter : "all" }),
+        body: JSON.stringify({ service, serviceDetail, niche, region, quantity, websiteFilter: service === "Site" ? websiteFilter : "all", onlyWithChannel }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível buscar leads");
@@ -143,6 +145,11 @@ export function LeadFinderPage() {
               </Select>
             </div>
           </div>
+
+          <label className="flex items-start gap-3 rounded-xl border border-line bg-[#090909] p-3 text-sm text-zinc-300">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" checked={onlyWithChannel} onChange={(event) => setOnlyWithChannel(event.target.checked)} />
+            <span><strong className="font-medium text-zinc-100">Só com WhatsApp ou Instagram</strong><span className="mt-0.5 block text-xs text-zinc-500">Empresas sem um desses canais não viram lead e não gastam créditos.</span></span>
+          </label>
 
           <div className="flex flex-col-reverse gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs leading-relaxed text-zinc-500">

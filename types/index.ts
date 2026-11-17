@@ -50,6 +50,8 @@ export interface Lead {
   marketplace_listings?: number | null;
   marketplace_presence?: "confirmada" | "a_validar" | null;
   whatsapp_source?: string | null;
+  /** Calculada pelo banco (migração 008): tem WhatsApp (confirmado ou celular) ou Instagram. */
+  has_message_channel?: boolean;
   whatsapp_opt_in: boolean;
   whatsapp_opt_in_at: string | null;
   whatsapp_opt_in_source: string | null;
