@@ -16,6 +16,8 @@ const schema = z.object({
   region: z.string().trim().max(120).optional().default(""),
   quantity: z.coerce.number().int().min(1).max(30),
   websiteFilter: z.enum(["all", "with", "without"]).default("all"),
+  /** Só cria leads que dão para chamar por WhatsApp (confirmado ou celular) ou Instagram. */
+  onlyWithChannel: z.boolean().default(true),
 }).superRefine((value, ctx) => {
   if (value.service === "Outro" && !value.serviceDetail) ctx.addIssue({ code: "custom", path: ["serviceDetail"], message: "Especifique o serviço em “Outro”." });
   if (value.service !== "Loja no Mercado Livre" && value.region.length < 2) ctx.addIssue({ code: "custom", path: ["region"], message: "Informe a cidade ou região." });
@@ -37,13 +39,20 @@ async function pool<T, R>(items: T[], limit: number, task: (item: T) => Promise<
 
 async function findLocalBusinesses(input: Input, diagnostics: Diagnostics) {
   const query = `${input.niche} em ${input.region}`;
-  // Busca mais do que o pedido para compensar o filtro de site.
-  const places = await mapsSearch(query, Math.min(60, input.websiteFilter === "all" ? input.quantity : input.quantity * 2));
-  const filtered = places.filter((place) => input.websiteFilter === "all" || (input.websiteFilter === "with" ? Boolean(place.website) : !place.website)).slice(0, input.quantity);
+  // Busca mais do que o pedido para compensar os filtros (site e canal de mensagem).
+  const factor = (input.websiteFilter === "all" ? 1 : 2) * (input.onlyWithChannel ? 2 : 1);
+  const places = await mapsSearch(query, Math.min(60, input.quantity * factor));
+  const filtered = places.filter((place) => input.websiteFilter === "all" || (input.websiteFilter === "with" ? Boolean(place.website) : !place.website));
   Object.assign(diagnostics, { engine: "google_maps", query, rawResults: places.length, candidates: filtered.length });
   if (!places.length) diagnostics.note = "O Google Maps não retornou empresas para esse nicho e região.";
   else if (!filtered.length) diagnostics.note = `O Google Maps retornou ${places.length} empresas, mas nenhuma passou no filtro de site.`;
-  return pool(filtered, 5, async (place) => leadFromPlace(place, await fetchSiteContacts(place.website), input));
+  // Lê os sites só até completar a quantidade pedida com leads que tenham canal.
+  const leads: FinderLead[] = [];
+  for (let start = 0; start < filtered.length && leads.length < input.quantity; start += 5) {
+    const batch = await pool(filtered.slice(start, start + 5), 5, async (place) => leadFromPlace(place, await fetchSiteContacts(place.website), input));
+    leads.push(...batch.filter((lead) => !input.onlyWithChannel || leadHasChannel(lead)));
+  }
+  return leads.slice(0, input.quantity);
 }
 
 async function findMercadoLivreStores(input: Input, diagnostics: Diagnostics) {
@@ -64,7 +73,7 @@ async function findMercadoLivreStores(input: Input, diagnostics: Diagnostics) {
   Object.assign(diagnostics, { engine, query, rawResults: organic.length, candidates: stores.length });
   if (!organic.length) diagnostics.note = "A pesquisa web não retornou resultados para esse nicho.";
   else if (!stores.length) diagnostics.note = `A pesquisa web retornou ${organic.length} resultados, mas nenhum era página de loja do Mercado Livre. Tente palavras mais genéricas.`;
-  return pool(stores.slice(0, Math.min(input.quantity, 20)), 4, async (store) => {
+  const leads = await pool(stores.slice(0, Math.min(input.quantity, 20)), 4, async (store) => {
     // 1 crédito por loja: procura a mesma empresa no Google Maps e só aceita se o nome conferir.
     let place: PlaceInfo | null = null;
     try {
@@ -73,6 +82,12 @@ async function findMercadoLivreStores(input: Input, diagnostics: Diagnostics) {
     } catch { place = null; }
     return leadFromMlStore(store, place, await fetchSiteContacts(place?.website || null), input);
   });
+  return input.onlyWithChannel ? leads.filter(leadHasChannel) : leads;
+}
+
+/** Lead da busca que dá para chamar: WhatsApp (confirmado ou celular), link oficial de WhatsApp ou Instagram. */
+function leadHasChannel(lead: FinderLead) {
+  return Boolean(lead.whatsapp || lead.instagram || (lead.contact_link && /wa\.me\/|whatsapp\.com|instagram\.com\/|ig\.me\//i.test(lead.contact_link)));
 }
 
 export async function POST(request: Request) {
@@ -107,6 +122,9 @@ export async function POST(request: Request) {
     const diagnostics: Diagnostics = { rawResults: 0, candidates: 0 };
     const found: FinderLead[] = input.service === "Loja no Mercado Livre" ? await findMercadoLivreStores(input, diagnostics) : await findLocalBusinesses(input, diagnostics);
     const unique = [...new Map(found.map((lead) => [lead.import_key, lead])).values()];
+    if (!found.length && diagnostics.candidates > 0 && input.onlyWithChannel) {
+      diagnostics.note = `Foram encontradas ${diagnostics.candidates} empresas, mas nenhuma com WhatsApp ou Instagram. Tente outro nicho ou desmarque “Só com WhatsApp ou Instagram”.`;
+    }
 
     // Leads já cadastrados não são alterados (etapa, notas e mensagem preservadas).
     const keys = unique.map((lead) => lead.import_key);
@@ -140,7 +158,7 @@ export async function POST(request: Request) {
     const byKey = new Map(unique.map((lead) => [lead.import_key, lead]));
     const summarize = (row: { id: string; company_name: string; import_key: string }) => {
       const lead = byKey.get(row.import_key);
-      return { id: row.id, company_name: row.company_name, city: lead?.city || null, state: lead?.state || null, phone: lead?.phone || null, whatsapp: lead?.whatsapp || null, whatsapp_confirmed: lead?.whatsapp_confirmed || false, website: lead?.website || null, marketplace_url: lead?.marketplace_url || null, marketplace_listings: lead?.marketplace_listings ?? null };
+      return { id: row.id, company_name: row.company_name, city: lead?.city || null, state: lead?.state || null, phone: lead?.phone || null, whatsapp: lead?.whatsapp || null, whatsapp_confirmed: lead?.whatsapp_confirmed || false, instagram: lead?.instagram || null, website: lead?.website || null, marketplace_url: lead?.marketplace_url || null, marketplace_listings: lead?.marketplace_listings ?? null };
     };
     return Response.json({ jobId: job.id, found: found.length, imported: inserted.map(summarize), existing: (existing || []).map(summarize), diagnostics });
   } catch (error) {

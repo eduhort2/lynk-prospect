@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, ContactRound, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { CalendarClock, ContactRound, Instagram, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { followUpBucket } from "@/features/leads/follow-ups";
 import { stageInfo, stageLabel } from "@/features/leads/stages";
-import { getProbableWhatsApp, hasWhatsApp } from "@/features/leads/whatsapp-link";
+import type { ContactChannel } from "@/features/leads/use-contact-lead";
+import { getInstagramTarget, getProbableWhatsApp, hasWhatsApp } from "@/features/leads/whatsapp-link";
 import { cn, formatDate } from "@/lib/utils";
 import type { Lead, Task } from "@/types";
 
@@ -28,11 +29,12 @@ function location(lead: Lead) {
   return [lead.city, lead.state].filter(Boolean).join("/") || "—";
 }
 
-export function LeadsTable({ leads, followUps, onOpen, onWhatsApp, onEdit, onDelete, onCreate }: {
+export function LeadsTable({ leads, followUps, onOpen, onContact, onEdit, onDelete, onCreate, emptyHint }: {
   leads: Lead[];
   followUps: Map<string, Task>;
   onOpen: (lead: Lead) => void;
-  onWhatsApp: (lead: Lead) => void;
+  onContact: (lead: Lead, channel: ContactChannel) => void;
+  emptyHint?: string;
   onEdit: (lead: Lead) => void;
   onDelete: (lead: Lead) => void;
   onCreate: () => void;
@@ -65,15 +67,15 @@ export function LeadsTable({ leads, followUps, onOpen, onWhatsApp, onEdit, onDel
   }
 
   if (!leads.length) {
-    return <EmptyState icon={ContactRound} title="Nenhum lead encontrado" description="Cadastre ou importe leads, ou ajuste a busca e os filtros." action={<Button onClick={onCreate}>Cadastrar lead</Button>} />;
+    return <EmptyState icon={ContactRound} title="Nenhum lead encontrado" description={emptyHint || "Cadastre ou importe leads, ou ajuste a busca e os filtros."} action={<Button onClick={onCreate}>Cadastrar lead</Button>} />;
   }
 
   const actions = (lead: Lead) => (
     <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-      {hasWhatsApp(lead) ? <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-light" onClick={() => onWhatsApp(lead)} aria-label={`Abrir WhatsApp de ${lead.company_name}`} title="Abrir WhatsApp"><MessageCircle className="h-4 w-4" /></Button> : (() => {
-        const probable = getProbableWhatsApp(lead, lead.message);
-        return probable ? <a href={probable.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-amber-300 hover:bg-white/[.06]" aria-label={`Abrir WhatsApp a confirmar de ${lead.company_name}`} title="Celular — WhatsApp a confirmar"><MessageCircle className="h-4 w-4" /></a> : null;
-      })()}
+      {hasWhatsApp(lead)
+        ? <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-light" onClick={() => onContact(lead, "whatsapp")} aria-label={`Abrir WhatsApp de ${lead.company_name}`} title="Abrir WhatsApp (move para Contatado)"><MessageCircle className="h-4 w-4" /></Button>
+        : getProbableWhatsApp(lead) ? <Button variant="ghost" size="icon" className="h-9 w-9 text-amber-300" onClick={() => onContact(lead, "whatsapp_probable")} aria-label={`Abrir WhatsApp a confirmar de ${lead.company_name}`} title="Celular — WhatsApp a confirmar (move para Contatado)"><MessageCircle className="h-4 w-4" /></Button> : null}
+      {getInstagramTarget(lead) ? <Button variant="ghost" size="icon" className="h-9 w-9 text-pink-300" onClick={() => onContact(lead, "instagram")} aria-label={`Abrir Instagram de ${lead.company_name}`} title="Abrir Direct do Instagram (copia a mensagem e move para Contatado)"><Instagram className="h-4 w-4" /></Button> : null}
       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(event) => toggleMenu(lead, event.currentTarget)} aria-label="Mais ações" aria-haspopup="menu" aria-expanded={menu?.lead.id === lead.id}><MoreHorizontal className="h-4 w-4" /></Button>
     </div>
   );

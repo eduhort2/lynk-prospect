@@ -14,6 +14,20 @@ import { isStrongPassword, passwordError } from "@/lib/validations/password";
 
 type Mode = "login" | "signup" | "recover";
 
+/** O Supabase às vezes devolve "{}" ou mensagens técnicas em inglês; mostra algo compreensível. */
+function authErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message.trim() : "";
+  const status = (error as { status?: number } | null)?.status;
+  if (!message || message === "{}" || /database error|unexpected_failure/i.test(message) || (status && status >= 500)) {
+    return "Erro no servidor ao processar o cadastro. Tente novamente em alguns minutos; se continuar, avise o administrador.";
+  }
+  if (/already registered|already exists/i.test(message)) return "Este e-mail já tem uma conta. Use “Esqueci minha senha” para recuperar o acesso.";
+  if (/invalid login credentials/i.test(message)) return "E-mail ou senha incorretos.";
+  if (/email not confirmed/i.test(message)) return "Confirme seu e-mail pelo link que enviamos antes de entrar.";
+  if (/rate limit|too many/i.test(message)) return "Muitas tentativas em pouco tempo. Aguarde alguns minutos.";
+  return message;
+}
+
 export default function LoginPage() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const router = useRouter();
@@ -79,7 +93,7 @@ export default function LoginPage() {
       router.refresh();
     } catch (error) {
       toast.error(mode === "signup" ? "Não foi possível criar a conta" : "Não foi possível entrar", {
-        description: error instanceof Error ? error.message : "Revise os dados e tente novamente.",
+        description: authErrorMessage(error),
       });
     } finally {
       setLoading(false);
