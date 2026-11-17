@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import { Bot, ChevronDown, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -73,7 +73,8 @@ export function Topbar() {
                 <p className="truncate text-xs font-medium text-zinc-200">{profile?.name || "Usuário"}</p>
                 <p className="truncate text-[11px] text-zinc-600">{organization?.name || profile?.email}</p>
               </div>
-              <Link role="menuitem" href="/configuracoes" className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><UserRound className="h-3.5 w-3.5" /> Conta</Link>
+              <Link role="menuitem" href="/assistente" className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><Bot className="h-3.5 w-3.5" /> Assistente de IA</Link>
+              <Link role="menuitem" href="/configuracoes" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]"><UserRound className="h-3.5 w-3.5" /> Conta</Link>
               <button role="menuitem" type="button" onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-zinc-300 hover:bg-white/[.06]"><LogOut className="h-3.5 w-3.5" /> Sair</button>
             </div>
           ) : null}

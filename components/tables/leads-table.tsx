@@ -101,7 +101,7 @@ export function LeadsTable({ leads, followUps, onOpen, onContact, onEdit, onDele
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-zinc-100">{lead.company_name}</p>
               <p className="mt-0.5 truncate text-xs text-zinc-600">{location(lead)}{lead.suggested_service ? ` · ${lead.suggested_service}` : ""}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2"><Badge tone={stageInfo(lead.status).tone}>{stageLabel(lead.status)}</Badge><FollowUp task={followUps.get(lead.id)} /></div>
+              <div className="mt-2 flex flex-wrap items-center gap-2"><Badge tone={stageInfo(lead.status).tone}>{stageLabel(lead.status)}</Badge>{lead.ai_handoff_at ? <Badge tone="amber">Precisa de você</Badge> : null}<FollowUp task={followUps.get(lead.id)} /></div>
             </div>
             {actions(lead)}
           </li>
@@ -118,7 +118,7 @@ export function LeadsTable({ leads, followUps, onOpen, onContact, onEdit, onDele
                 <td className="px-5 py-3.5"><div className="font-medium text-zinc-100">{lead.company_name}</div><div className="mt-0.5 text-xs text-zinc-600">{lead.segment || lead.contact_name || "—"}</div></td>
                 <td className="px-4 py-3.5 text-zinc-400">{location(lead)}</td>
                 <td className="px-4 py-3.5 text-zinc-300">{lead.suggested_service || <span className="text-zinc-700">—</span>}</td>
-                <td className="px-4 py-3.5"><Badge tone={stageInfo(lead.status).tone} className="whitespace-nowrap">{stageLabel(lead.status)}</Badge></td>
+                <td className="px-4 py-3.5"><div className="flex flex-wrap items-center gap-1.5"><Badge tone={stageInfo(lead.status).tone} className="whitespace-nowrap">{stageLabel(lead.status)}</Badge>{lead.ai_handoff_at ? <Badge tone="amber" className="whitespace-nowrap" title={lead.ai_handoff_reason || undefined}>Precisa de você</Badge> : null}</div></td>
                 <td className="px-4 py-3.5"><FollowUp task={followUps.get(lead.id)} /></td>
                 <td className="px-5 py-3.5">{actions(lead)}</td>
               </tr>
