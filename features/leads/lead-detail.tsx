@@ -16,6 +16,7 @@ import { followUpBucket, useScheduleFollowUp } from "./follow-ups";
 import { StageOptions } from "./stage-options";
 import { stageInfo, stageLabel, stageOf } from "./stages";
 import { useUpdateLead } from "./use-leads";
+import { ConversationPanel } from "@/features/assistant/conversation-panel";
 import { useContactLead, type ContactChannel } from "./use-contact-lead";
 import { getInstagramTarget, getOtherContactLink, getProbableWhatsApp, getWhatsAppTarget } from "./whatsapp-link";
 
@@ -229,6 +230,9 @@ export function LeadDetail({ lead, followUp, onEdit }: { lead: Lead; followUp?: 
           {followUp ? <div className="mt-2 flex gap-1"><Button variant="ghost" size="sm" onClick={() => finishFollowUp("complete")}><Check className="h-3.5 w-3.5" /> Concluir retorno</Button><Button variant="ghost" size="sm" className="text-zinc-500" onClick={() => finishFollowUp("cancel")}><X className="h-3.5 w-3.5" /> Remover</Button></div> : null}
         </div>
       </div>
+
+      {/* Conversa do WhatsApp e assistente de IA */}
+      <ConversationPanel lead={lead} />
 
       {/* Notas */}
       <div>

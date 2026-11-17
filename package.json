@@ -1,6 +1,6 @@
 {
   "name": "lynk-prospect",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:import": "node --import tsx scripts/test-daily-import.ts",
     "test:lean": "node --import tsx scripts/test-lean-flow.ts",
-    "test:finder": "node --import tsx scripts/test-lead-finder.ts"
+    "test:finder": "node --import tsx scripts/test-lead-finder.ts",
+    "test:assistant": "node --import tsx scripts/test-assistant.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

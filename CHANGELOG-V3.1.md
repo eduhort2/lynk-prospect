@@ -1,5 +1,33 @@
 # LYNK Prospect v3.1 (versão enxuta)
 
+## Atualização v3.4 — Assistente de IA no WhatsApp
+
+- **Nova tela "Assistente de IA"** (menu do avatar). Nela você configura quem você é, o que oferece, os preços (ou "não falar preço"), o tom de voz e quando a IA deve te chamar. Também mostra o que ainda falta configurar no servidor, tem um **simulador** que testa a IA sem enviar nada e a chave **Ligar/Desligar respostas automáticas**.
+- **Respostas automáticas:** quando um lead responde no WhatsApp, a IA lê a conversa e os dados do lead (serviço sugerido, sinal observado, a sua mensagem de prospecção) e responde pelo mesmo número. Na mesma resposta ela decide uma ação:
+  - mudar a etapa (nunca rebaixa);
+  - agendar o retorno na Agenda;
+  - **chamar você** (aviso "Precisa de você" e tarefa "Responder…");
+  - marcar como Perdido quando a pessoa pede para não ser contatada.
+- **Segurança da IA:**
+  - Não inventa preço, prazo ou garantia fora da configuração.
+  - Diz que é assistente virtual se perguntarem.
+  - Resposta mal formada ou IA indisponível (por exemplo, limite do plano gratuito) vira "Precisa de você", sem enviar nada.
+  - Áudio ou imagem do lead vira "Precisa de você".
+  - Várias mensagens seguidas recebem uma resposta só.
+  - A IA só responde dentro da janela de 24 h do WhatsApp.
+- **Você no controle:**
+  - Na ficha, a seção **Conversa no WhatsApp** mostra todo o histórico (Você, Lead, Assistente).
+  - Dá para **pausar a IA** num lead, **devolver para a IA** ou **responder pelo próprio Lynk**.
+  - Se você responder pelo celular ou pelo Lynk depois que o lead respondeu, a IA para de responder aquele lead até você devolver.
+- **Webhook do WhatsApp:**
+  - Grava mensagens nos dois sentidos, sem duplicar quando a Meta reenvia.
+  - Entende as mensagens que você manda pelo app WhatsApp Business (coexistência, `smb_message_echoes`).
+  - Encontra o lead mesmo quando o WhatsApp manda o celular sem o 9.
+  - Não rebaixa a etapa e não guarda mensagens de números que não são leads.
+- **IA gratuita para começar:** Gemini, pelo plano gratuito do Google AI Studio (`AI_PROVIDER=gemini`, `GEMINI_API_KEY`). O provedor fica num ponto único (`lib/ai/provider.ts`) para trocar por um pago depois.
+- **Migração `009_ai_assistant.sql`** (aditiva): tabela `assistant_settings`; colunas no lead `ai_paused`, `ai_handoff_reason`, `ai_handoff_at` e `last_inbound_at`; nas mensagens `direction`, `author` e `message_type`; índice único por mensagem.
+- Passo a passo de ativação: `docs/assistente-ia-ativacao.md`. Testes: `npm run test:assistant` (9 testes).
+
 ## Atualização v3.3 — contato em um clique e foco em quem dá para chamar
 
 - **Abrir conversa já move para Contatado:** clicar em WhatsApp (confirmado ou "a confirmar") ou Instagram, na lista ou na ficha, abre a conversa e muda a etapa de **Novo para Contatado**, registrando a data do contato. Leads em etapa mais avançada mantêm a etapa. O "Marcar como contatado" continua para contatos por telefone ou e-mail.

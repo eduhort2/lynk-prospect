@@ -13,6 +13,34 @@ export function whatsappConfig() {
   return { token, phoneNumberId, apiVersion: process.env.WHATSAPP_API_VERSION || "v23.0" };
 }
 
+function graphBase() {
+  // WHATSAPP_GRAPH_BASE_URL existe só para testes locais com respostas simuladas.
+  return process.env.WHATSAPP_GRAPH_BASE_URL || "https://graph.facebook.com";
+}
+
+/**
+ * Mensagem de texto livre. Pelas regras do WhatsApp, só é aceita até 24 h depois
+ * da última mensagem do contato (fora disso, apenas modelos aprovados).
+ */
+export async function sendWhatsAppText(input: { to: string; body: string }) {
+  const config = whatsappConfig();
+  const response = await fetch(`${graphBase()}/${config.apiVersion}/${config.phoneNumberId}/messages`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${config.token}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: normalizeBrazilPhone(input.to),
+      type: "text",
+      text: { preview_url: false, body: input.body.slice(0, 4000) },
+    }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const data = await response.json().catch(() => ({})) as { messages?: Array<{ id: string }>; error?: { message?: string; code?: number } };
+  if (!response.ok || !data.messages?.[0]?.id) throw new Error(`WHATSAPP_SEND_ERROR:${data.error?.message || response.status}`);
+  return { id: data.messages[0].id };
+}
+
 export async function sendWhatsAppTemplate(input: { to: string; company: string; city?: string | null }) {
   const config = whatsappConfig();
   const template = process.env.WHATSAPP_TEMPLATE_NAME || "lynk_primeiro_contato";

@@ -52,6 +52,11 @@ export interface Lead {
   whatsapp_source?: string | null;
   /** Calculada pelo banco (migração 008): tem WhatsApp (confirmado ou celular) ou Instagram. */
   has_message_channel?: boolean;
+  /** Assistente de IA (migração 009). */
+  ai_paused?: boolean;
+  ai_handoff_reason?: string | null;
+  ai_handoff_at?: string | null;
+  last_inbound_at?: string | null;
   whatsapp_opt_in: boolean;
   whatsapp_opt_in_at: string | null;
   whatsapp_opt_in_source: string | null;
